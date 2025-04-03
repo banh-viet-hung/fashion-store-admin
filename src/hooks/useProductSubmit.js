@@ -15,7 +15,7 @@ import useTranslationValue from "./useTranslationValue";
 
 const useProductSubmit = (id) => {
   const location = useLocation();
-  const { isDrawerOpen, closeDrawer, setIsUpdate, lang } =
+  const { isDrawerOpen, closeDrawer, setIsUpdate, lang, drawerType, productId } =
     useContext(SidebarContext);
 
   const { data: attribue } = useAsync(AttributeServices.getShowingAttributes);
@@ -43,7 +43,6 @@ const useProductSubmit = (id) => {
   const [attTitle, setAttTitle] = useState([]);
   const [variantTitle, setVariantTitle] = useState([]);
   const [attributes, setAttributes] = useState([]);
-  const [productId, setProductId] = useState("");
   const [updatedId, setUpdatedId] = useState(id);
   const [imgId, setImgId] = useState("");
   const [isBulkUpdate, setIsBulkUpdate] = useState(false);
@@ -651,6 +650,80 @@ const useProductSubmit = (id) => {
     setValue("slug", value.toLowerCase().replace(/[^A-Z0-9]+/gi, "-"));
     setSlug(value.toLowerCase().replace(/[^A-Z0-9]+/gi, "-"));
   };
+
+  // Fetch product data when editing
+  useEffect(() => {
+    const fetchProductData = async () => {
+      try {
+        if (drawerType === "edit" && productId && isDrawerOpen) {
+          console.log("Fetching product data for editing, id:", productId);
+          // Fetch product details
+          const productData = await ProductServices.getProductById(productId);
+          
+          if (productData && productData.success) {
+            const data = productData.data;
+            console.log("Fetched product data:", data);
+            
+            // Set form values
+            setValue("title", data.name);
+            setValue("description", data.description);
+            setValue("price", data.price);
+            setValue("originalPrice", data.salePrice || data.price);
+            setValue("stock", data.stock || 0);
+            setValue("sku", data.sku || "");
+            setValue("barcode", data.barcode || "");
+            
+            // Set categories
+            if (data.categorySlugs && data.categorySlugs.length > 0) {
+              const categories = data.categorySlugs.map(slug => ({ slug }));
+              setSelectedCategory(categories);
+              setDefaultCategory([categories[0]]);
+            }
+            
+            // Set tags if any
+            if (data.tags) {
+              setTag(data.tags);
+            }
+            
+            // Fetch product images
+            const images = await ProductServices.getProductImages(productId);
+            if (images && images.length > 0) {
+              const imageUrls = images.map(img => img.url);
+              setImageUrl(imageUrls);
+            }
+            
+            // Set variants if any
+            if (data.variants && data.variants.length > 0) {
+              setIsCombination(true);
+              setVariants(data.variants);
+              
+              // Extract unique colors and sizes
+              const colors = [...new Set(data.variants.map(v => v.colorName))];
+              const sizes = [...new Set(data.variants.map(v => v.sizeName))];
+              
+              if (colors.length > 0) {
+                setAttTitle(prev => [...prev, "Color"]);
+                setAttributes(prev => [...prev, { name: "Color", values: colors }]);
+              }
+              
+              if (sizes.length > 0) {
+                setAttTitle(prev => [...prev, "Size"]);
+                setAttributes(prev => [...prev, { name: "Size", values: sizes }]);
+              }
+            }
+            
+            setUpdatedId(productId);
+            setResData(data);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching product data:", error);
+        notifyError("Failed to fetch product data");
+      }
+    };
+    
+    fetchProductData();
+  }, [drawerType, productId, isDrawerOpen, setValue]);
 
   return {
     tag,

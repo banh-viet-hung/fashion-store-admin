@@ -83,7 +83,7 @@ const Attributes = () => {
 
   return (
     <>
-      <PageTitle>{t("AttributeTitle")}</PageTitle>
+      <PageTitle>{t("Quản lý Attributes")}</PageTitle>
       <DeleteModal
         ids={allId}
         setIsCheck={setIsCheck}
@@ -99,10 +99,10 @@ const Attributes = () => {
           <CardBody>
             <form
               onSubmit={handleSubmitAttribute}
-              className="py-3  grid gap-4 lg:gap-6 xl:gap-6  xl:flex"
+              className="py-3 md:pb-0 grid gap-4 lg:gap-6 xl:gap-6 xl:flex"
             >
-              <div className="flex justify-start xl:w-1/2  md:w-full">
-                <UploadMany
+              <div className="flex-grow-0 sm:flex-grow md:flex-grow lg:flex-grow xl:flex-grow">
+                {/* <UploadMany
                   title="Attribute"
                   exportData={data}
                   filename={filename}
@@ -110,11 +110,11 @@ const Attributes = () => {
                   handleSelectFile={handleSelectFile}
                   handleUploadMultiple={handleUploadMultiple}
                   handleRemoveSelectFile={handleRemoveSelectFile}
-                />
+                /> */}
               </div>
 
-              <div className="lg:flex  md:flex xl:justify-end xl:w-1/2  md:w-full md:justify-start flex-grow-0">
-                <div className="w-full md:w-40 lg:w-40 xl:w-40 mr-3 mb-3 lg:mb-0">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* <div className="w-full md:w-40 lg:w-40 xl:w-40 mr-3 mb-3 lg:mb-0">
                   <Button
                     disabled={isCheck.length < 1}
                     onClick={() => handleUpdateMany(isCheck)}
@@ -126,35 +126,35 @@ const Attributes = () => {
 
                     {t("BulkAction")}
                   </Button>
-                </div>
-                <div className="w-full md:w-32 lg:w-32 xl:w-32 mr-3 mb-3 lg:mb-0">
+                </div> */}
+                <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
                   <Button
                     disabled={isCheck.length < 1}
                     onClick={() => handleDeleteMany(isCheck)}
-                    className="w-full rounded-md h-12 bg-red-500 btn-red"
+                    className="w-full rounded-md h-12 bg-red-300 disabled btn-red"
                   >
                     <span className="mr-2">
                       <FiTrash2 />
                     </span>
-                    {t("Delete")}
+                    {t("Xóa Attributes")}
                   </Button>
                 </div>
-                <div className="w-full md:w-48 lg:w-48 xl:w-48">
+                <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
                   <Button
                     onClick={toggleDrawer}
-                    className="w-full rounded-md h-12 "
+                    className="w-full rounded-md h-12"
                   >
                     <span className="mr-2">
                       <FiPlus />
                     </span>
-                    {t("CouponsAddAttributeBtn")}
+                    {t("Thêm Attribute")}
                   </Button>
                 </div>
               </div>
             </form>
           </CardBody>
         </Card>
-        <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
+        {/* <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
           <CardBody>
             <form
               onSubmit={handleSubmitAttribute}
@@ -187,7 +187,7 @@ const Attributes = () => {
               </div>
             </form>
           </CardBody>
-        </Card>
+        </Card> */}
       </AnimatedContent>
 
       {loading ? (

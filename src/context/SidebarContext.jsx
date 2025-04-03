@@ -41,6 +41,8 @@ export const SidebarProvider = ({ children }) => {
   const [windowDimension, setWindowDimension] = useState(window.innerWidth);
   const [loading, setLoading] = useState(false);
   const [navBar, setNavBar] = useState(true);
+  const [drawerType, setDrawerType] = useState("add");
+  const [productId, setProductId] = useState(null);
   const { i18n } = useTranslation();
   const [tabIndex, setTabIndex] = useState(0);
   const { data: globalSetting } = useQuery({
@@ -60,7 +62,11 @@ export const SidebarProvider = ({ children }) => {
   const closeSidebar = () => setIsSidebarOpen(false);
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const closeDrawer = () => setIsDrawerOpen(false);
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+    setProductId(null);
+    setDrawerType("add");
+  };
   const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
 
   const closeBulkDrawer = () => setIsBulkDrawerOpen(false);
@@ -147,6 +153,14 @@ export const SidebarProvider = ({ children }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const openEditDrawer = (id) => {
+    console.log("openEditDrawer called with id:", id);
+    setProductId(id);
+    setDrawerType("edit");
+    setIsDrawerOpen(true);
+    console.log("After setting state:", { productId: id, drawerType: "edit", isDrawerOpen: true });
+  };
+
   return (
     <SidebarContext.Provider
       value={{
@@ -207,6 +221,11 @@ export const SidebarProvider = ({ children }) => {
         navBar,
         tabIndex,
         setTabIndex,
+        drawerType,
+        setDrawerType,
+        productId,
+        setProductId,
+        openEditDrawer,
       }}
     >
       {children}

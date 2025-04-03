@@ -1,19 +1,18 @@
 import { Avatar, TableBody, TableCell, TableRow } from "@windmill/react-ui";
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { FiZoomIn } from "react-icons/fi";
+import dayjs from "dayjs";
 
-//internal import
-
-import Status from "@/components/table/Status";
+// internal import
 import useUtilsFunction from "@/hooks/useUtilsFunction";
 import MainDrawer from "@/components/drawer/MainDrawer";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
 import Tooltip from "@/components/tooltip/Tooltip";
-import StaffDrawer from "@/components/drawer/StaffDrawer";
 import DeleteModal from "@/components/modal/DeleteModal";
-import EditDeleteButton from "@/components/table/EditDeleteButton";
-import ActiveInActiveButton from "@/components/table/ActiveInActiveButton";
+import StaffStatusButton from "@/components/table/StaffStatusButton";
 import AccessListModal from "@/components/modal/AccessListModal";
+import RoleChangeDrawer from "@/components/drawer/RoleChangeDrawer";
+import { SidebarContext } from "@/context/SidebarContext";
 
 const StaffTable = ({ staffs, lang }) => {
   const {
@@ -25,27 +24,39 @@ const StaffTable = ({ staffs, lang }) => {
     handleResetPassword,
   } = useToggleDrawer();
 
-  const { showDateFormat, showingTranslateValue } = useUtilsFunction();
-  // State for access list modal
+  const { showingTranslateValue } = useUtilsFunction();
+  const { toggleDrawer, isDrawerOpen } = useContext(SidebarContext);
+
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  const [showRoleChangeDrawer, setShowRoleChangeDrawer] = useState(false);
+  
+  // Reset state khi drawer đóng
+  useEffect(() => {
+    if (!isDrawerOpen) {
+      setShowRoleChangeDrawer(false);
+    }
+  }, [isDrawerOpen]);
 
-  // Function to open the access list modal
   const handleAccessModalOpen = (staff) => {
     setSelectedStaff(staff);
     setIsAccessModalOpen(true);
   };
 
-  // Function to close the access list modal
   const handleAccessModalClose = () => {
     setSelectedStaff(null);
     setIsAccessModalOpen(false);
   };
 
+  const handleEditClick = (staff) => {
+    setSelectedStaff(staff);
+    setShowRoleChangeDrawer(true);
+    toggleDrawer();
+  };
+
   return (
     <>
       <DeleteModal id={serviceId} title={title} />
-      {/* Access List Modal */}
       {isAccessModalOpen && (
         <AccessListModal
           staff={selectedStaff}
@@ -55,55 +66,57 @@ const StaffTable = ({ staffs, lang }) => {
         />
       )}
 
-      <MainDrawer>
-        <StaffDrawer id={serviceId} />
-      </MainDrawer>
+      {showRoleChangeDrawer && (
+        <MainDrawer>
+          <RoleChangeDrawer staff={selectedStaff} />
+        </MainDrawer>
+      )}
 
       <TableBody>
         {staffs?.map((staff) => (
-          <TableRow key={staff._id}>
+          <TableRow key={staff.id}>
             <TableCell>
               <div className="flex items-center">
                 <Avatar
                   className="hidden mr-3 md:block bg-gray-50"
-                  src={staff.image}
+                  src={staff.avatar}
                   alt="staff"
                 />
                 <div>
-                  <h2 className="text-sm font-medium">
-                    {showingTranslateValue(staff?.name)}
-                  </h2>
+                  <h2 className="text-sm font-medium">{staff.fullName}</h2>
                 </div>
               </div>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">{staff.email}</span>{" "}
-            </TableCell>
-            <TableCell>
-              <span className="text-sm ">{staff.phone}</span>
+              <span className="text-sm">{staff.email}</span>
             </TableCell>
 
             <TableCell>
               <span className="text-sm">
-                {/* {dayjs(staff.joiningData).format("DD/MM/YYYY")} */}
-                {showDateFormat(staff.joiningData)}
+                {staff.phoneNumber || "Chưa cập nhật"}
               </span>
             </TableCell>
+
             <TableCell>
-              <span className="text-sm font-semibold">{staff?.role}</span>
-            </TableCell>
-            <TableCell className="text-center text-xs">
-              <Status status={staff.status} />
+              <span className="text-sm">
+                {staff.dateOfBirth
+                  ? dayjs(staff.dateOfBirth).format("DD/MM/YYYY")
+                  : "Chưa cập nhật"}
+              </span>
             </TableCell>
 
-            <TableCell className="text-center">
-              <ActiveInActiveButton
-                id={staff?._id}
-                staff={staff}
-                option="staff"
-                status={staff.status}
-              />
+            <TableCell>
+              <span className="text-sm font-semibold">{staff.roleName}</span>
+            </TableCell>
+
+            <TableCell className="text-center text-xs">
+              <span
+                className={`px-2 py-1 rounded ${staff.active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                  }`}
+              >
+                {staff.active ? 'Active' : 'Blocked'}
+              </span>
             </TableCell>
 
             <TableCell>
@@ -119,14 +132,11 @@ const StaffTable = ({ staffs, lang }) => {
                     bgColor="#059669"
                   />
                 </button>
-                <EditDeleteButton
-                  id={staff._id}
-                  staff={staff}
-                  isSubmitting={isSubmitting}
-                  handleUpdate={handleUpdate}
-                  handleModalOpen={handleModalOpen}
-                  handleResetPassword={handleResetPassword}
-                  title={showingTranslateValue(staff?.name)}
+                <StaffStatusButton 
+                  id={staff.id} 
+                  email={staff.email} 
+                  isActive={staff.active} 
+                  handleUpdate={() => handleEditClick(staff)}
                 />
               </div>
             </TableCell>

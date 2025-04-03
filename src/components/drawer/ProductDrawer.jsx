@@ -9,7 +9,7 @@ import {
   Table,
 } from "@windmill/react-ui";
 import Multiselect from "multiselect-react-dropdown";
-import React from "react";
+import React, { useContext } from "react";
 import { Scrollbars } from "react-custom-scrollbars-2";
 import { MultiSelect } from "react-multi-select-component";
 import { Modal } from "react-responsive-modal";
@@ -36,11 +36,16 @@ import UploaderThree from "@/components/image-uploader/UploaderThree";
 import AttributeOptionTwo from "@/components/attribute/AttributeOptionTwo";
 import AttributeListTable from "@/components/attribute/AttributeListTable";
 import SwitchToggleForCombination from "@/components/form/switch/SwitchToggleForCombination";
+import { SidebarContext } from "@/context/SidebarContext";
+import ProductServices from "@/services/ProductServices";
+import { notifySuccess, notifyError } from "@/utils/toast";
 
 //internal import
 
 const ProductDrawer = ({ id }) => {
   const { t } = useTranslation();
+  const { drawerType, closeDrawer } = useContext(SidebarContext);
+  const isEditing = drawerType === "edit";
 
   const {
     tag,
@@ -63,7 +68,6 @@ const ProductDrawer = ({ id }) => {
     attributes,
     attTitle,
     handleAddAtt,
-    // productId,
     onCloseModal,
     isBulkUpdate,
     globalSetting,
@@ -91,6 +95,79 @@ const ProductDrawer = ({ id }) => {
 
   const { currency, showingTranslateValue } = useUtilsFunction();
 
+  // Function to handle updating just the product info
+  const handleUpdateProductInfo = async (data) => {
+    try {
+      const productData = {
+        name: data.title,
+        description: data.description || "",
+        price: parseFloat(data.price),
+        salePrice: parseFloat(data.originalPrice),
+        categorySlugs: selectedCategory.map(category => category.slug),
+        colorNames: attributes.find(attr => attr.name === "Color")?.values || [],
+        sizeNames: attributes.find(attr => attr.name === "Size")?.values || []
+      };
+      
+      console.log("Updating product info:", productData);
+      const response = await ProductServices.updateProduct(id, productData);
+      
+      if (response && response.success) {
+        notifySuccess(response.message || "Product information updated successfully");
+      } else {
+        notifyError(response?.message || "Failed to update product information");
+      }
+    } catch (error) {
+      console.error("Error updating product info:", error);
+      notifyError(error?.response?.data?.message || error?.message || "Failed to update product information");
+    }
+  };
+
+  // Function to handle updating just the product images
+  const handleUpdateProductImages = async () => {
+    try {
+      const imageData = {
+        imageUrls: imageUrl
+      };
+      
+      console.log("Updating product images:", imageData);
+      const response = await ProductServices.updateProductImages(id, imageData);
+      
+      if (response && response.success) {
+        notifySuccess(response.message || "Product images updated successfully");
+      } else {
+        notifyError(response?.message || "Failed to update product images");
+      }
+    } catch (error) {
+      console.error("Error updating product images:", error);
+      notifyError(error?.response?.data?.message || error?.message || "Failed to update product images");
+    }
+  };
+
+  // Function to handle updating just the product variants
+  const handleUpdateProductVariants = async () => {
+    try {
+      const variantData = {
+        variants: variants.map(variant => ({
+          colorName: variant.colorName,
+          sizeName: variant.sizeName,
+          quantity: parseInt(variant.quantity)
+        }))
+      };
+      
+      console.log("Updating product variants:", variantData);
+      const response = await ProductServices.updateProductVariants(id, variantData);
+      
+      if (response && response.success) {
+        notifySuccess(response.message || "Product variants updated successfully");
+      } else {
+        notifyError(response?.message || "Failed to update product variants");
+      }
+    } catch (error) {
+      console.error("Error updating product variants:", error);
+      notifyError(error?.response?.data?.message || error?.message || "Failed to update product variants");
+    }
+  };
+
   return (
     <>
       <Modal
@@ -113,7 +190,7 @@ const ProductDrawer = ({ id }) => {
       </Modal>
 
       <div className="w-full relative p-6 border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-        {id ? (
+        {isEditing ? (
           <Title
             register={register}
             handleSelectLanguage={handleSelectLanguage}
@@ -159,7 +236,7 @@ const ProductDrawer = ({ id }) => {
       </div>
 
       <Scrollbars className="track-horizontal thumb-horizontal w-full md:w-7/12 lg:w-8/12 xl:w-8/12 relative dark:bg-gray-700 dark:text-gray-200">
-        <form onSubmit={handleSubmit(onSubmit)} className="block" id="block">
+        <form onSubmit={handleSubmit(isEditing ? handleUpdateProductInfo : onSubmit)} className="block" id="block">
           {tapValue === "Basic Info" && (
             <div className="px-6 pt-8 flex-grow w-full h-full max-h-full pb-40 md:pb-32 lg:pb-32 xl:pb-32">
               {/* <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
@@ -237,7 +314,7 @@ const ProductDrawer = ({ id }) => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              {/* <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Category")} />
                 <div className="col-span-8 sm:col-span-4">
                   <ParentCategory
@@ -247,7 +324,7 @@ const ProductDrawer = ({ id }) => {
                     setDefaultCategory={setDefaultCategory}
                   />
                 </div>
-              </div>
+              </div> */}
 
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("DefaultCategory")} />
@@ -451,6 +528,57 @@ const ProductDrawer = ({ id }) => {
           {tapValue === "Combination" && (
             <DrawerButton id={id} title="Product" isSubmitting={isSubmitting} />
           )}
+
+          {/* Display different buttons based on editing mode */}
+          <div className="fixed z-10 bottom-0 w-full right-0 py-4 lg:py-8 px-6 grid gap-4 lg:gap-6 xl:gap-6 md:flex xl:flex bg-gray-50 border-t border-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
+              <Button
+                onClick={closeDrawer}
+                className="h-12 bg-white w-full text-red-500 hover:bg-red-50 hover:border-red-100 hover:text-red-600 dark:bg-gray-700 dark:border-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-red-700"
+                layout="outline"
+              >
+                {t("CancelBtn")}
+              </Button>
+            </div>
+            
+            {isEditing ? (
+              <>
+                <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
+                  <Button type="submit" className="w-full h-12" disabled={isSubmitting}>
+                    {isSubmitting ? t("Updating") + "..." : t("UpdateProductInfo")}
+                  </Button>
+                </div>
+                
+                <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
+                  <Button 
+                    onClick={handleUpdateProductImages} 
+                    className="w-full h-12 bg-indigo-600 hover:bg-indigo-700" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? t("Updating") + "..." : t("UpdateImages")}
+                  </Button>
+                </div>
+                
+                {isCombination && (
+                  <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
+                    <Button 
+                      onClick={handleUpdateProductVariants} 
+                      className="w-full h-12 bg-emerald-600 hover:bg-emerald-700" 
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? t("Updating") + "..." : t("UpdateVariants")}
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
+                <Button type="submit" className="w-full h-12" disabled={isSubmitting}>
+                  {isSubmitting ? t("Submitting") + "..." : t("AddProductBtn")}
+                </Button>
+              </div>
+            )}
+          </div>
         </form>
 
         {tapValue === "Combination" &&

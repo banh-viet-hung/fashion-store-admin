@@ -30,16 +30,12 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
   const { handleDisableForDemo } = useDisableForDemo();
 
   const handleDelete = async () => {
-    if (handleDisableForDemo()) {
-      return; // Exit the function if the feature is disabled
-    }
+    if (handleDisableForDemo()) return;
     try {
       setIsSubmitting(true);
       if (location.pathname === "/products") {
         if (ids) {
-          const res = await ProductServices.deleteManyProducts({
-            ids: ids,
-          });
+          const res = await ProductServices.deleteManyProducts({ ids: ids });
           setIsUpdate(true);
           notifySuccess(res.message);
           setIsCheck([]);
@@ -79,9 +75,9 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
 
       if (location.pathname === "/categories" || category) {
         if (ids) {
-          //  console.log('delete modal categorices',ids)
+           console.log('delete modal categorices',ids)
           const res = await CategoryServices.deleteManyCategory({
-            ids: ids,
+            "ids": ids,
           });
           //  console.log('delete many category res',res)
           setIsUpdate(true);
@@ -250,9 +246,9 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
           </span>
           {/* <h2 className="text-xl font-medium mb-1">{t('DeleteModalH2')}</h2> */}
           <h2 className="text-xl font-medium mb-2">
-            {t("DeleteModalH2")} <span className="text-red-500">{title}</span>?
+            {t("Bạn muốn xóa")} <span className="text-red-500">{title}</span>?
           </h2>
-          <p>{t("DeleteModalPtag")}</p>
+          {/* <p>{t("")}</p> */}
         </ModalBody>
 
         <ModalFooter className="justify-center">
@@ -261,7 +257,7 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
             layout="outline"
             onClick={closeModal}
           >
-            {t("modalKeepBtn")}
+            {t("Hủy thao tác")}
           </Button>
           <div className="flex justify-end">
             {isSubmitting ? (
@@ -282,7 +278,7 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
               </Button>
             ) : (
               <Button onClick={handleDelete} className="w-full h-12 sm:w-auto">
-                {t("modalDeletBtn")}
+                {t("Xác nhận xóa")}
               </Button>
               // <button
               //   type="submit"

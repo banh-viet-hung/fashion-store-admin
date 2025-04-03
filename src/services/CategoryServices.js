@@ -1,12 +1,14 @@
 import requests from "./httpService";
 
 const CategoryServices = {
-  getAllCategory: async () => {
-    return requests.get("/category");
+  getAllCategory: async (page = 0, size = 20) => {
+    const response = await requests.get(`/category?page=${page}&size=${size}`);
+    return response; // Trả về toàn bộ response để xử lý category và phân trang
   },
 
   getAllCategories: async () => {
-    return requests.get("/category/all");
+    const response = await requests.get("/category?page=0&size=100");
+    return response._embedded.category; // Trích xuất mảng category từ _embedded.category
   },
 
   getCategoryById: async (id) => {
@@ -14,7 +16,7 @@ const CategoryServices = {
   },
 
   addCategory: async (body) => {
-    return requests.post("/category/add", body);
+    return requests.post("/categories/create", body);
   },
 
   addAllCategory: async (body) => {
@@ -29,8 +31,8 @@ const CategoryServices = {
     return requests.put(`/category/status/${id}`, body);
   },
 
-  deleteCategory: async (id, body) => {
-    return requests.delete(`/category/${id}`, body);
+  deleteCategory: async (id) => {
+    return requests.delete(`/category/${id}`);
   },
 
   updateManyCategory: async (body) => {
@@ -38,7 +40,7 @@ const CategoryServices = {
   },
 
   deleteManyCategory: async (body) => {
-    return requests.patch("/category/delete/many", body);
+    return requests.post("/categories/delete-many", body);
   },
 };
 

@@ -30,10 +30,10 @@ const useToggleDrawer = () => {
     }
   }, [isDrawerOpen]);
 
-  const handleDeleteMany = async (id, products) => {
-    setAllId(id);
+  const handleDeleteMany = (ids) => {
+    setAllId(ids);
     toggleModal();
-    setTitle("Selected Products");
+    setTitle("các trường đã chọn");
   };
 
   return {

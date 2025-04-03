@@ -133,7 +133,7 @@ const Orders = () => {
 
   return (
     <>
-      <PageTitle>{t("Orders")}</PageTitle>
+      <PageTitle>{t("Quản lý đơn hàng")}</PageTitle>
 
       <AnimatedContent>
         <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
@@ -145,14 +145,14 @@ const Orders = () => {
                     ref={searchRef}
                     type="search"
                     name="search"
-                    placeholder="Search by Customer Name"
+                    placeholder="Nhập mã đơn hàng"
                   />
                 </div>
 
                 <div>
                   <Select onChange={(e) => setStatus(e.target.value)}>
                     <option value="Status" defaultValue hidden>
-                      {t("Status")}
+                      {t("Trạng thái đơn hàng")}
                     </option>
                     <option value="Delivered">{t("PageOrderDelivered")}</option>
                     <option value="Pending">{t("PageOrderPending")}</option>
@@ -166,7 +166,7 @@ const Orders = () => {
                 <div>
                   <Select onChange={(e) => setTime(e.target.value)}>
                     <option value="Order limits" defaultValue hidden>
-                      {t("Orderlimits")}
+                      {t("Đặt hàng gần đây")}
                     </option>
                     <option value="5">{t("DaysOrders5")}</option>
                     <option value="7">{t("DaysOrders7")}</option>
@@ -177,7 +177,7 @@ const Orders = () => {
                 <div>
                   <Select onChange={(e) => setMethod(e.target.value)}>
                     <option value="Method" defaultValue hidden>
-                      {t("Method")}
+                      {t("Phương thức thanh toán")}
                     </option>
 
                     <option value="Cash">{t("Cash")}</option>
@@ -212,7 +212,7 @@ const Orders = () => {
                         "opacity-50 cursor-not-allowed bg-emerald-600"
                       } flex items-center justify-center text-sm leading-5 h-12 w-full text-center transition-colors duration-150 font-medium px-6 py-2 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600 `}
                     >
-                      Download All Orders
+                      Tải xuống tất cả
                       <span className="ml-2 text-base">
                         <IoCloudDownloadOutline />
                       </span>
@@ -246,7 +246,7 @@ const Orders = () => {
                       type="submit"
                       className="h-12 w-full bg-emerald-700"
                     >
-                      Filter
+                      Áp dụng
                     </Button>
                   </div>
 
@@ -259,7 +259,7 @@ const Orders = () => {
                       className="px-4 md:py-1 py-3 text-sm dark:bg-gray-700"
                     >
                       <span className="text-black dark:text-gray-200">
-                        Reset
+                        Hoàn tác
                       </span>
                     </Button>
                   </div>

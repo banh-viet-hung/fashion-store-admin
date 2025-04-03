@@ -69,6 +69,7 @@ const useGetCData = () => {
             adminInfo.iv
           );
           const decryptedArray = JSON.parse(decryptedString); // Assuming the decrypted data is a JSON string
+          console.log("Decrypted Data:", decryptedArray);
 
           // Set state: accessList is all except last element, role is last element
           const lastElement = decryptedArray.pop(); // Remove and get the last element

@@ -25,20 +25,20 @@ const sidebar = [
 
   {
     icon: FiSlack,
-    name: "Catalog",
+    name: "Danh mục",
     routes: [
       {
         path: "/products",
-        name: "Products",
+        name: "Sản phẩm",
       },
       {
         path: "/categories",
-        name: "Categories",
+        name: "Danh mục",
       },
-      {
-        path: "/attributes",
-        name: "Attributes",
-      },
+      // {
+      //   path: "/attributes",
+      //   name: "Attributes",
+      // },
       {
         path: "/coupons",
         name: "Coupons",
@@ -49,76 +49,76 @@ const sidebar = [
   {
     path: "/customers",
     icon: FiUsers,
-    name: "Customers",
+    name: "Khách hàng",
   },
   {
     path: "/orders",
     icon: FiCompass,
-    name: "Orders",
+    name: "Đơn hàng",
   },
 
   {
     path: "/our-staff",
     icon: FiUser,
-    name: "OurStaff",
+    name: "Nhân viên",
   },
 
-  {
-    path: "/settings?settingTab=common-settings",
-    icon: FiSettings,
-    name: "Settings",
-  },
-  {
-    icon: FiGlobe,
-    name: "International",
-    routes: [
-      {
-        path: "/languages",
-        name: "Languages",
-      },
-      {
-        path: "/currencies",
-        name: "Currencies",
-      },
-    ],
-  },
-  {
-    icon: FiTarget,
-    name: "OnlineStore",
-    routes: [
-      {
-        name: "ViewStore",
-        path: "/store",
-        outside: "store",
-      },
+  // {
+  //   path: "/settings?settingTab=common-settings",
+  //   icon: FiSettings,
+  //   name: "Cài đặt",
+  // },
+  // {
+  //   icon: FiGlobe,
+  //   name: "International",
+  //   routes: [
+  //     {
+  //       path: "/languages",
+  //       name: "Languages",
+  //     },
+  //     {
+  //       path: "/currencies",
+  //       name: "Currencies",
+  //     },
+  //   ],
+  // },
+  // {
+  //   icon: FiTarget,
+  //   name: "OnlineStore",
+  //   routes: [
+  //     {
+  //       name: "ViewStore",
+  //       path: "/store",
+  //       outside: "store",
+  //     },
 
-      {
-        path: "/store/customization",
-        name: "StoreCustomization",
-      },
-      {
-        path: "/store/store-settings",
-        name: "StoreSettings",
-      },
-    ],
-  },
+  //     {
+  //       path: "/store/customization",
+  //       name: "StoreCustomization",
+  //     },
+  //     {
+  //       path: "/store/store-settings",
+  //       name: "StoreSettings",
+  //     },
+  //   ],
+  // },
 
-  {
-    icon: FiSlack,
-    name: "Pages",
-    routes: [
-      // submenu
+  // {
+  //   icon: FiSlack,
+  //   name: "Pages",
+  //   routes: [
+  //     // submenu
 
-      {
-        path: "/404",
-        name: "404",
-      },
-      {
-        path: "/coming-soon",
-        name: "Coming Soon",
-      },
-    ],
-  },
+  //     {
+  //       path: "/404",
+  //       name: "404",
+  //     },
+  //     {
+  //       path: "/coming-soon",
+  //       name: "Coming Soon",
+  //     },
+  //   ],
+  // },
 ];
 
 export default sidebar;

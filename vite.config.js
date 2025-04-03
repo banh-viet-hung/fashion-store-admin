@@ -60,7 +60,7 @@ export default defineConfig({
         start_url: ".",
         id: ".",
         short_name: "Dashtar - E-Commerce Website",
-        name: "Dashtar | React eCommerce Admin Dashboard",
+        name: "COOLMAN | Admin Dashboard",
         description:
           "Dashtar : React Grocery & Organic Food Store e-commerce Admin Dashboard",
         icons: [

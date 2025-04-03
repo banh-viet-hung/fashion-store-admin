@@ -21,21 +21,45 @@ const useLoginSubmit = () => {
 
   const onSubmit = async ({ name, email, verifyEmail, password, role }) => {
     setLoading(true);
-    const cookieTimeOut = 0.5;
+    const cookieTimeOut = 1 / 24; // 1 hour
 
     try {
       if (location.pathname === "/login") {
-        const res = await AdminServices.loginAdmin({ email, password });
+        // const res = await AdminServices.loginAdmin({ email, password });
+        // console.log("Phản hồi sau khi login", res);
 
-        if (res) {
-          notifySuccess("Login Success!");
-          dispatch({ type: "USER_LOGIN", payload: res });
-          Cookies.set("adminInfo", JSON.stringify(res), {
+        // if (res) {
+        //   notifySuccess("Đăng nhập thành công!");
+        //   dispatch({ type: "USER_LOGIN", payload: res });
+        //   Cookies.set("adminInfo", JSON.stringify(res), {
+        //     expires: cookieTimeOut,
+        //     sameSite: "None",
+        //     secure: true,
+        //   });
+        //   history.replace("/dashboard");
+        // }
+
+        const res = await AdminServices.loginAdmin({
+          email,
+          password,
+          rememberMe: false,
+        });
+        console.log("Phản hồi sau khi login", res);
+        if (res && res.success) {
+          if (res.data.role === "USER") {
+            notifyError("Bạn không có quyền truy cập trang này!");
+            return;
+          }
+
+          dispatch({ type: "USER_LOGIN", payload: res.data });
+          Cookies.set("adminInfo", JSON.stringify(res.data), {
             expires: cookieTimeOut,
             sameSite: "None",
             secure: true,
           });
           history.replace("/dashboard");
+        } else {
+          notifyError(res.message || "Lỗi không xác định!");
         }
       }
 

@@ -1,16 +1,19 @@
 import requests from "./httpService";
 
 const CustomerServices = {
-  getAllCustomers: async ({ searchText = "" }) => {
-    return requests.get(`/customer?searchText=${searchText}`);
+  getAllCustomers: async ({ page, size, email, cancelToken }) => {
+    return requests.get(
+      `/user/all?page=${page}&size=${size}&email=${email}&roleName=USER`,
+      { cancelToken }
+    );
   },
 
   addAllCustomers: async (body) => {
     return requests.post("/customer/add/all", body);
   },
-  // user create
+
   createCustomer: async (body) => {
-    return requests.post(`/customer/create`, body);
+    return requests.post("/customer/create", body);
   },
 
   filterCustomer: async (email) => {

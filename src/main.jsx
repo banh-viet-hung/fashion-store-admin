@@ -15,7 +15,7 @@ import "@/assets/css/tailwind.css";
 import App from "@/App";
 import myTheme from "@/assets/theme/myTheme";
 import { AdminProvider } from "@/context/AdminContext";
-import { SidebarProvider } from "@/context/SidebarContext";
+import { SidebarProvider } from "./context/SidebarContext.jsx";
 import ThemeSuspense from "@/components/theme/ThemeSuspense";
 import store from "@/reduxStore/store";
 import "@/i18n";

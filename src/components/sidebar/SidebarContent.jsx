@@ -8,8 +8,8 @@ import { IoLogOutOutline } from "react-icons/io5";
 //internal import
 import sidebar from "@/routes/sidebar";
 // import SidebarSubMenu from "SidebarSubMenu";
-import logoDark from "@/assets/img/logo/logo-dark.svg";
-import logoLight from "@/assets/img/logo/logo-light.svg";
+import logoDark from "@/assets/img/logo/logo-light.png";
+import logoLight from "@/assets/img/logo/logo-dark-new.webp";
 import { AdminContext } from "@/context/AdminContext";
 import SidebarSubMenu from "@/components/sidebar/SidebarSubMenu";
 import useGetCData from "@/hooks/useGetCData";
@@ -25,27 +25,29 @@ const SidebarContent = () => {
     Cookies.remove("adminInfo");
   };
 
-  const updatedSidebar = sidebar
-    .map((route) => {
-      // Filter sub-routes if they exist
-      if (route.routes) {
-        const validSubRoutes = route.routes.filter((subRoute) => {
-          const routeKey = subRoute.path.split("?")[0].split("/")[1];
-          // console.log("subRoute", routeKey);
-          return accessList.includes(routeKey);
-        });
+  // const updatedSidebar = sidebar
+  //   .map((route) => {
+  //     // Filter sub-routes if they exist
+  //     if (route.routes) {
+  //       const validSubRoutes = route.routes.filter((subRoute) => {
+  //         const routeKey = subRoute.path.split("?")[0].split("/")[1];
+  //         // console.log("subRoute", routeKey);
+  //         return accessList.includes(routeKey);
+  //       });
 
-        // Only include the route if it has valid sub-routes
-        if (validSubRoutes.length > 0) {
-          return { ...route, routes: validSubRoutes };
-        }
-        return null; // Exclude the main route if no sub-routes are valid
-      }
-      // Handle top-level route: check root path part
-      const routeKey = route.path?.split("?")[0].split("/")[1];
-      return routeKey && accessList.includes(routeKey) ? route : null;
-    })
-    .filter(Boolean);
+  //       // Only include the route if it has valid sub-routes
+  //       if (validSubRoutes.length > 0) {
+  //         return { ...route, routes: validSubRoutes };
+  //       }
+  //       return null; // Exclude the main route if no sub-routes are valid
+  //     }
+  //     // Handle top-level route: check root path part
+  //     const routeKey = route.path?.split("?")[0].split("/")[1];
+  //     return routeKey && accessList.includes(routeKey) ? route : null;
+  //   })
+  //   .filter(Boolean);
+
+  const updatedSidebar = sidebar;
 
   return (
     <div className="py-4 text-gray-500 dark:text-gray-400">
@@ -90,7 +92,7 @@ const SidebarContent = () => {
         <Button onClick={handleLogOut} size="large" className="w-full">
           <span className="flex items-center">
             <IoLogOutOutline className="mr-3 text-lg" />
-            <span className="text-sm">{t("LogOut")}</span>
+            <span className="text-sm">{t("Đăng xuất")}</span>
           </span>
         </Button>
       </span>

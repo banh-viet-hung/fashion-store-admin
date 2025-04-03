@@ -1,40 +1,80 @@
 import requests from "./httpService";
 
 const ProductServices = {
-  getAllProducts: async ({ page, limit, category, title, price }) => {
+  getAllProducts: async ({ page, limit, category, title, status }) => {
     const searchCategory = category !== null ? category : "";
     const searchTitle = title !== null ? title : "";
-    const searchPrice = price !== null ? price : "";
+    const searchStatus = status !== null ? status : "";
 
-    return requests.get(
-      `/products?page=${page}&limit=${limit}&category=${searchCategory}&title=${searchTitle}&price=${searchPrice}`
+    const response = await requests.get(
+      `/products/list?page=${
+        page - 1
+      }&limit=${limit}&category=${searchCategory}&status=${searchStatus}&title=${searchTitle}`
     );
+    if (!response.success) {
+      throw new Error(response.message);
+    }
+    return response.data;
   },
 
   getProductById: async (id) => {
-    return requests.post(`/products/${id}`);
+    return requests.get(`/products/${id}`);
   },
+  
   addProduct: async (body) => {
-    return requests.post("/products/add", body);
+    return requests.post("/products/create", body);
   },
+  
+  addProductImages: async (productId, body) => {
+    console.log("Gửi request lưu ảnh với body:", JSON.stringify(body));
+    // Đảm bảo body được gửi đúng định dạng
+    const requestBody = {
+      imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [body.imageUrls]
+    };
+    
+    return requests.post(`/products/${productId}/images`, requestBody);
+  },
+  
+  addProductVariants: async (productId, variants) => {
+    console.log("Gửi request tạo variants với body:", JSON.stringify(variants));
+    return requests.post(`/product-variant/${productId}/variants`, variants);
+  },
+  
   addAllProducts: async (body) => {
     return requests.post("/products/all", body);
   },
+  
   updateProduct: async (id, body) => {
-    return requests.patch(`/products/${id}`, body);
+    return requests.put(`/products/update/${id}`, body);
   },
+  
+  updateProductImages: async (id, body) => {
+    // Đảm bảo body được gửi đúng định dạng
+    const requestBody = {
+      imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [body.imageUrls]
+    };
+    
+    return requests.put(`/products/${id}/images`, requestBody);
+  },
+  
+  updateProductVariants: async (id, body) => {
+    return requests.put(`/product-variant/${id}/variants`, body);
+  },
+  
   updateManyProducts: async (body) => {
     return requests.patch("products/update/many", body);
   },
+  
   updateStatus: async (id, body) => {
     return requests.put(`/products/status/${id}`, body);
   },
 
   deleteProduct: async (id) => {
-    return requests.delete(`/products/${id}`);
+    return requests.delete(`/products/delete/${id}`); // API xóa riêng lẻ
   },
+
   deleteManyProducts: async (body) => {
-    return requests.patch("/products/delete/many", body);
+    return requests.post("/products/delete-many", body); // API xóa nhiều
   },
 };
 

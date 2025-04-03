@@ -5,8 +5,13 @@ const AdminServices = {
     return requests.post("/admin/register", body);
   },
 
+  // loginAdmin: async (body) => {
+  //   return requests.post(`/admin/login`, body);
+  // },
+
+
   loginAdmin: async (body) => {
-    return requests.post(`/admin/login`, body);
+    return requests.post("/api/auth/login", body);
   },
 
   forgetPassword: async (body) => {
@@ -24,9 +29,14 @@ const AdminServices = {
   addStaff: async (body) => {
     return requests.post("/admin/add", body);
   },
-  getAllStaff: async (body) => {
-    return requests.get("/admin", body);
+
+  getAllStaff: async ({ page = 1, size = 5, email = "", roleName = "STAFF", cancelToken }) => {
+    return requests.get(
+      `/user/all?page=${page}&size=${size}&email=${email}&roleName=${roleName}`,
+      { cancelToken }
+    );
   },
+
   getStaffById: async (id, body) => {
     return requests.post(`/admin/${id}`, body);
   },
@@ -41,6 +51,13 @@ const AdminServices = {
 
   deleteStaff: async (id) => {
     return requests.delete(`/admin/${id}`);
+  },
+  getAllRoles: async () => {
+    return requests.get("/role");
+  },
+
+  createUser: async (userData) => {
+    return requests.post("/user/admin/create-user", userData);
   },
 };
 

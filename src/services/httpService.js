@@ -20,6 +20,10 @@ instance.interceptors.request.use(function (config) {
     adminInfo = JSON.parse(Cookies.get("adminInfo"));
   }
 
+  if (adminInfo) {
+    console.log('Admin Http Services Cookie Read : ' + adminInfo.token);
+  }
+
   let company;
 
   if (Cookies.get("company")) {
@@ -29,11 +33,11 @@ instance.interceptors.request.use(function (config) {
   // console.log('Admin Http Services Cookie Read : ' + company);
   // let companyName = JSON.stringify(company);
 
+
   return {
     ...config,
     headers: {
-      authorization: adminInfo ? `Bearer ${adminInfo.token}` : null,
-      company: company ? company : null,
+      Authorization: adminInfo ? `Bearer ${adminInfo.token}` : null,
     },
   };
 });

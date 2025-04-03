@@ -1,3 +1,4 @@
+import { useState, useRef, useContext, useEffect } from "react";
 import {
   Button,
   Card,
@@ -11,16 +12,12 @@ import {
   TableFooter,
   TableHeader,
 } from "@windmill/react-ui";
-import { useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { FiPlus } from "react-icons/fi";
 
-//internal import
-
 import useAsync from "@/hooks/useAsync";
-import useFilter from "@/hooks/useFilter";
 import MainDrawer from "@/components/drawer/MainDrawer";
-import StaffDrawer from "@/components/drawer/StaffDrawer";
+import AddStaffDrawer from "@/components/drawer/AddStaffDrawer";
 import TableLoading from "@/components/preloader/TableLoading";
 import StaffTable from "@/components/staff/StaffTable";
 import NotFound from "@/components/table/NotFound";
@@ -33,36 +30,81 @@ import AnimatedContent from "@/components/common/AnimatedContent";
 const Staff = () => {
   const { state } = useContext(AdminContext);
   const { adminInfo } = state;
-  const { toggleDrawer, lang } = useContext(SidebarContext);
-
-  const { data, loading, error } = useAsync(() =>
-    AdminServices.getAllStaff({ email: adminInfo.email })
-  );
-
   const {
-    userRef,
-    setRole,
-    totalResults,
-    resultsPerPage,
-    dataTable,
-    serviceData,
-    handleChangePage,
-    handleSubmitUser,
-  } = useFilter(data);
-
+    toggleDrawer,
+    lang,
+    currentPage,
+    setCurrentPage,
+    setIsUpdate,
+    searchText,
+    setSearchText,
+    isDrawerOpen,
+  } = useContext(SidebarContext);
   const { t } = useTranslation();
 
-  // handle reset filed
+  // Trạng thái cục bộ
+  const [selectedRole, setSelectedRole] = useState("STAFF");
+  const userRef = useRef(null);
+
+  // Lấy danh sách roles
+  const { data: rolesData, loading: rolesLoading, error: rolesError } = useAsync(
+    AdminServices.getAllRoles
+  );
+
+  // Hàm gọi API thông qua useAsync
+  const asyncFunction = async ({ cancelToken }) => {
+    return AdminServices.getAllStaff({
+      page: currentPage,
+      size: 5,
+      email: searchText,
+      roleName: selectedRole,
+      cancelToken,
+    });
+  };
+
+  const { data, loading, error } = useAsync(asyncFunction);
+
+  // Reset trạng thái khi vào trang Staff
+  useEffect(() => {
+    setSearchText(""); // Reset searchText về rỗng
+    setCurrentPage(1); // Reset currentPage về 1
+    setIsUpdate(true); // Kích hoạt useAsync gọi lại API với trạng thái mới
+  }, [setSearchText, setCurrentPage, setIsUpdate]);
+
+  // Xử lý khi submit form (Áp dụng)
+  const handleSubmitUser = (e) => {
+    e.preventDefault();
+    const newSearchText = userRef.current.value;
+    setSearchText(newSearchText);
+    setCurrentPage(1); // Reset về trang 1
+    setIsUpdate(true); // Buộc useAsync gọi lại API
+  };
+
+  // Xử lý khi reset (Hoàn tác)
   const handleResetField = () => {
-    setRole("");
-    userRef.current.value = "";
+    setSearchText("");
+    setSelectedRole("STAFF");
+    setCurrentPage(1); // Reset về trang 1
+    setIsUpdate(true); // Buộc useAsync gọi lại API
+    if (userRef.current) userRef.current.value = "";
+  };
+
+  // Xử lý thay đổi trang
+  const handleChangePage = (p) => {
+    setCurrentPage(p);
+    setIsUpdate(true); // Buộc useAsync gọi lại API khi đổi trang
+  };
+
+  const handleAddStaffClick = () => {
+    toggleDrawer();
   };
 
   return (
     <>
-      <PageTitle>{t("StaffPageTitle")} </PageTitle>
+      <PageTitle>{t("Quản lý nhân viên")}</PageTitle>
+      
       <MainDrawer>
-        <StaffDrawer />
+        <AddStaffDrawer />
       </MainDrawer>
 
       <AnimatedContent>
@@ -77,39 +119,36 @@ const Staff = () => {
                   ref={userRef}
                   type="search"
                   name="search"
-                  placeholder={t("StaffSearchBy")}
+                  placeholder={t("Nhập email nhân viên")}
                 />
-                <button
-                  type="submit"
-                  className="absolute right-0 top-0 mt-5 mr-1"
-                ></button>
               </div>
               <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
-                <Select onChange={(e) => setRole(e.target.value)}>
-                  <option value="All" defaultValue hidden>
-                    {t("StaffRole")}
-                  </option>
-                  <option value="Admin">{t("StaffRoleAdmin")}</option>
-                  <option value="Cashier">{t("SelectCashiers")}</option>
-                  <option value="Super Admin">{t("SelectSuperAdmin")}</option>
-                </Select>
+                {rolesLoading ? (
+                  <Select disabled>
+                    <option>Loading...</option>
+                  </Select>
+                ) : rolesError ? (
+                  <span className="text-red-500">{rolesError}</span>
+                ) : (
+                  <Select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                  >
+                    {rolesData?._embedded?.role
+                      ?.filter((role) => role.name !== "USER")
+                      .map((role) => (
+                        <option key={role.name} value={role.name}>
+                          {role.name}
+                        </option>
+                      ))}
+                  </Select>
+                )}
               </div>
 
-              <div className="w-full md:w-56 lg:w-56 xl:w-56">
-                <Button
-                  onClick={toggleDrawer}
-                  className="w-full rounded-md h-12"
-                >
-                  <span className="mr-3">
-                    <FiPlus />
-                  </span>
-                  {t("AddStaff")}
-                </Button>
-              </div>
               <div className="mt-2 md:mt-0 flex items-center xl:gap-x-4 gap-x-1 flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
                 <div className="w-full mx-1">
                   <Button type="submit" className="h-12 w-full bg-emerald-700">
-                    Filter
+                    Áp dụng
                   </Button>
                 </div>
 
@@ -120,9 +159,23 @@ const Staff = () => {
                     type="reset"
                     className="px-4 md:py-1 py-3 text-sm dark:bg-gray-700"
                   >
-                    <span className="text-black dark:text-gray-200">Reset</span>
+                    <span className="text-black dark:text-gray-200">
+                      Hoàn tác
+                    </span>
                   </Button>
                 </div>
+              </div>
+
+              <div className="w-full md:w-56 lg:w-56 xl:w-56">
+                <Button
+                  onClick={handleAddStaffClick}
+                  className="w-full rounded-md h-12"
+                >
+                  <span className="mr-3">
+                    <FiPlus />
+                  </span>
+                  {t("Thêm nhân viên")}
+                </Button>
               </div>
             </form>
           </CardBody>
@@ -130,39 +183,29 @@ const Staff = () => {
       </AnimatedContent>
 
       {loading ? (
-        // <Loading loading={loading} />
         <TableLoading row={12} col={7} width={163} height={20} />
       ) : error ? (
         <span className="text-center mx-auto text-red-500">{error}</span>
-      ) : serviceData?.length !== 0 ? (
+      ) : data?.data?.content?.length > 0 ? (
         <TableContainer className="mb-8 rounded-b-lg">
           <Table>
             <TableHeader>
               <tr>
-                <TableCell>{t("StaffNameTbl")}</TableCell>
-                <TableCell>{t("StaffEmailTbl")}</TableCell>
-                <TableCell>{t("StaffContactTbl")}</TableCell>
-                <TableCell>{t("StaffJoiningDateTbl")}</TableCell>
-                <TableCell>{t("StaffRoleTbl")}</TableCell>
-                <TableCell className="text-center">
-                  {t("OderStatusTbl")}
-                </TableCell>
-                <TableCell className="text-center">
-                  {t("PublishedTbl")}
-                </TableCell>
-
-                <TableCell className="text-center">
-                  {t("StaffActionsTbl")}
-                </TableCell>
+                <TableCell>{t("Họ tên")}</TableCell>
+                <TableCell>{t("Email")}</TableCell>
+                <TableCell>{t("SĐT")}</TableCell>
+                <TableCell>{t("Ngày sinh")}</TableCell>
+                <TableCell>{t("ROLE")}</TableCell>
+                <TableCell className="text-center">{t("Trạng thái")}</TableCell>
+                <TableCell className="text-center">{t("Hành động")}</TableCell>
               </tr>
             </TableHeader>
-
-            <StaffTable staffs={dataTable} lang={lang} />
+            <StaffTable staffs={data.data.content} lang={lang} />
           </Table>
           <TableFooter>
             <Pagination
-              totalResults={totalResults}
-              resultsPerPage={resultsPerPage}
+              totalResults={data.data.totalElements}
+              resultsPerPage={data.data.size}
               onChange={handleChangePage}
               label="Table navigation"
             />

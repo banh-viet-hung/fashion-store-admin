@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Avatar,
   Badge,
@@ -9,7 +10,6 @@ import { t } from "i18next";
 import { FiZoomIn } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
-//internal import
 import MainDrawer from "@/components/drawer/MainDrawer";
 import ProductDrawer from "@/components/drawer/ProductDrawer";
 import CheckBox from "@/components/form/others/CheckBox";
@@ -18,33 +18,39 @@ import EditDeleteButton from "@/components/table/EditDeleteButton";
 import ShowHideButton from "@/components/table/ShowHideButton";
 import Tooltip from "@/components/tooltip/Tooltip";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
-import useUtilsFunction from "@/hooks/useUtilsFunction";
 
-//internal import
+const formatVND = (value) => {
+  if (value == null) return "0 VNĐ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 
 const ProductTable = ({ products, isCheck, setIsCheck }) => {
   const { title, serviceId, handleModalOpen, handleUpdate } = useToggleDrawer();
-  const { currency, showingTranslateValue, getNumberTwo } = useUtilsFunction();
 
   const handleClick = (e) => {
     const { id, checked } = e.target;
-    // console.log("id", id, checked);
-
-    setIsCheck([...isCheck, id]);
-    if (!checked) {
-      setIsCheck(isCheck.filter((item) => item !== id));
-    }
+    setIsCheck((prev) => {
+      if (checked) {
+        return prev.includes(id) ? prev : [...prev, id]; // Chỉ thêm nếu chưa có
+      } else {
+        return prev.filter((item) => item !== id);
+      }
+    });
   };
 
   return (
     <>
       {isCheck?.length < 1 && <DeleteModal id={serviceId} title={title} />}
 
-      {isCheck?.length < 2 && (
+      {/* {isCheck?.length < 2 && (
         <MainDrawer>
           <ProductDrawer currency={currency} id={serviceId} />
         </MainDrawer>
-      )}
+      )} */}
 
       <TableBody>
         {products?.map((product, i) => (
@@ -52,19 +58,19 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
             <TableCell>
               <CheckBox
                 type="checkbox"
-                name={product?.title?.en}
-                id={product._id}
+                name={product?.name}
+                id={String(product.id)} // Chuyển id thành chuỗi
                 handleClick={handleClick}
-                isChecked={isCheck?.includes(product._id)}
+                isChecked={isCheck?.includes(String(product.id))} // Chuyển id thành chuỗi
               />
             </TableCell>
 
             <TableCell>
               <div className="flex items-center">
-                {product?.image[0] ? (
+                {product?.thumbnailUrl ? (
                   <Avatar
                     className="hidden p-1 mr-2 md:block bg-gray-50 shadow-none"
-                    src={product?.image[0]}
+                    src={product?.thumbnailUrl}
                     alt="product"
                   />
                 ) : (
@@ -74,54 +80,44 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
                   />
                 )}
                 <div>
-                  <h2
-                    className={`text-sm font-medium ${
-                      product?.title.length > 30 ? "wrap-long-title" : ""
-                    }`}
-                  >
-                    {showingTranslateValue(product?.title)?.substring(0, 28)}
-                  </h2>
+                  <h2 className="text-sm font-medium">{product?.name}</h2>
                 </div>
               </div>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">
-                {showingTranslateValue(product?.category?.name)}
-              </span>
-            </TableCell>
-
-            <TableCell>
               <span className="text-sm font-semibold">
-                {currency}
-                {product?.isCombination
-                  ? getNumberTwo(product?.variants[0]?.originalPrice)
-                  : getNumberTwo(product?.prices?.originalPrice)}
+                {formatVND(product?.price)}
               </span>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm font-semibold">
-                {currency}
-                {product?.isCombination
-                  ? getNumberTwo(product?.variants[0]?.price)
-                  : getNumberTwo(product?.prices?.price)}
-              </span>
+              {product.salePrice > 0 ? (
+                <span className="text-sm font-semibold">
+                  {formatVND(product?.salePrice)}
+                </span>
+              ) : (
+                <span className="text-sm font-semibold">
+                  {t("Không khuyến mãi")}
+                </span>
+              )}
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">{product.stock}</span>
+              <span className="text-sm">{product.quantity}</span>
             </TableCell>
+
             <TableCell>
-              {product.stock > 0 ? (
+              {product.quantity > 0 ? (
                 <Badge type="success">{t("Selling")}</Badge>
               ) : (
                 <Badge type="danger">{t("SoldOut")}</Badge>
               )}
             </TableCell>
+
             <TableCell>
               <Link
-                to={`/product/${product._id}`}
+                to={`/product/${product.id}`}
                 className="flex justify-center text-gray-400 hover:text-emerald-600"
               >
                 <Tooltip
@@ -132,18 +128,15 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
                 />
               </Link>
             </TableCell>
-            <TableCell className="text-center">
-              <ShowHideButton id={product._id} status={product.status} />
-              {/* {product.status} */}
-            </TableCell>
+
             <TableCell>
               <EditDeleteButton
-                id={product._id}
+                id={product.id}
                 product={product}
                 isCheck={isCheck}
                 handleUpdate={handleUpdate}
                 handleModalOpen={handleModalOpen}
-                title={showingTranslateValue(product?.title)}
+                title={product?.name}
               />
             </TableCell>
           </TableRow>

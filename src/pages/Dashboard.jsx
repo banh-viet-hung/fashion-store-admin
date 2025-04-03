@@ -237,7 +237,7 @@ const Dashboard = () => {
 
   return (
     <>
-      <PageTitle>{t("DashboardOverview")}</PageTitle>
+      <PageTitle>{t("Dashboard")}</PageTitle>
 
       <AnimatedContent>
         <div className="grid gap-2 mb-8 xl:grid-cols-5 md:grid-cols-2">

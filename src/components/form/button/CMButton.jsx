@@ -12,7 +12,7 @@ const CMButton = ({ type, onClick, className, disabled }) => {
     >
       <img src={spinnerLoadingImage} alt="Loading" width={20} height={10} />
       <span className="font-serif ml-1 font-light text-sm text-white">
-        Processing
+        Đang xử lí
       </span>
     </button>
   );
