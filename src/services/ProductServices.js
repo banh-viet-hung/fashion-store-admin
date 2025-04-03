@@ -21,6 +21,40 @@ const ProductServices = {
     return requests.get(`/products/${id}`);
   },
   
+  getProductImages: async (id) => {
+    try {
+      const response = await fetch(`http://localhost:8080/product/${id}/images`);
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error("Error fetching product images:", error);
+      return {
+        success: false,
+        message: "Không thể tải hình ảnh sản phẩm"
+      };
+    }
+  },
+  
+  getProductVariants: async (id) => {
+    try {
+      const response = await fetch(`http://localhost:8080/product-variant/${id}/variants`);
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error("Error fetching product variants:", error);
+      return {
+        success: false,
+        message: "Không thể tải biến thể sản phẩm"
+      };
+    }
+  },
+  
   addProduct: async (body) => {
     return requests.post("/products/create", body);
   },

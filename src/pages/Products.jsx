@@ -28,6 +28,7 @@ import { SidebarContext } from "@/context/SidebarContext";
 import ProductTable from "@/components/product/ProductTable";
 import MainDrawer from "@/components/drawer/MainDrawer";
 import AddProductDrawer from "@/components/drawer/AddProductDrawer";
+import EditProductDrawer from "@/components/drawer/EditProductDrawer";
 import CheckBox from "@/components/form/others/CheckBox";
 import useProductFilter from "@/hooks/useProductFilter";
 import DeleteModal from "@/components/modal/DeleteModal";
@@ -54,6 +55,10 @@ const Products = () => {
     sortedField,
     setSortedField,
     limitData,
+    drawerType,
+    productId,
+    openEditDrawer,
+    isDrawerOpen
   } = useContext(SidebarContext);
 
   const { data, loading, error } = useAsync(() =>
@@ -98,7 +103,11 @@ const Products = () => {
       <PageTitle>{t("Quản lý sản phẩm")}</PageTitle>
       <DeleteModal ids={allId} setIsCheck={setIsCheck} title={title} />
       <MainDrawer>
-        <AddProductDrawer />
+        {drawerType === "add" ? (
+          <AddProductDrawer />
+        ) : (
+          <EditProductDrawer id={productId} />
+        )}
       </MainDrawer>
       <AnimatedContent>
         <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">

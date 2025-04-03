@@ -26,7 +26,7 @@ import Loading from "@/components/preloader/Loading";
 
 const EditProductDrawer = ({ id }) => {
   const { t } = useTranslation();
-  
+
   const {
     register,
     handleSubmit,
@@ -55,9 +55,11 @@ const EditProductDrawer = ({ id }) => {
     loading,
     handleUpdateBasicInfo,
     handleUpdateImages,
-    handleUpdateVariants
+    handleUpdateVariants,
+    debugInfo,
+    refreshData
   } = useEditProductSubmit(id);
-  
+
   if (loading) {
     return (
       <div className="w-full h-full flex items-center justify-center p-10">
@@ -65,7 +67,7 @@ const EditProductDrawer = ({ id }) => {
       </div>
     );
   }
-  
+
   return (
     <>
       <div className="w-full relative p-6 border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -74,7 +76,7 @@ const EditProductDrawer = ({ id }) => {
           description={t("Cập nhật thông tin cho sản phẩm")}
         />
       </div>
-      
+
       {/* Tabs */}
       <div className="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-700">
         <ul className="flex flex-wrap -mb-px">
@@ -85,11 +87,10 @@ const EditProductDrawer = ({ id }) => {
                 e.preventDefault();
                 handleTabChange("basic");
               }}
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "basic"
+              className={`inline-block p-4 rounded-t-lg ${activeTab === "basic"
                   ? "text-emerald-600 border-b-2 border-emerald-600 active"
                   : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
-              }`}
+                }`}
             >
               {t("Thông tin cơ bản")}
             </a>
@@ -101,18 +102,17 @@ const EditProductDrawer = ({ id }) => {
                 e.preventDefault();
                 handleContinueToVariants();
               }}
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "variants"
+              className={`inline-block p-4 rounded-t-lg ${activeTab === "variants"
                   ? "text-emerald-600 border-b-2 border-emerald-600 active"
                   : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
-              }`}
+                }`}
             >
               {t("Kho hàng")}
             </a>
           </li>
         </ul>
       </div>
-      
+
       <Scrollbars className="w-full md:w-7/12 lg:w-8/12 xl:w-8/12 relative dark:bg-gray-700 dark:text-gray-200">
         <form onSubmit={handleSubmit(onSubmit)} className="block">
           {activeTab === "basic" && (
@@ -133,7 +133,7 @@ const EditProductDrawer = ({ id }) => {
                   <Error errorName={errors.name} />
                 </div>
               </div>
-              
+
               {/* Mô tả sản phẩm */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Mô tả sản phẩm")} />
@@ -149,7 +149,7 @@ const EditProductDrawer = ({ id }) => {
                   <Error errorName={errors.description} />
                 </div>
               </div>
-              
+
               {/* Giá gốc */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Giá gốc")} />
@@ -170,14 +170,13 @@ const EditProductDrawer = ({ id }) => {
                   <Error errorName={errors.price} />
                 </div>
               </div>
-              
+
               {/* Giá khuyến mãi */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Giá khuyến mãi")} />
                 <div className="col-span-8 sm:col-span-4">
                   <Input
                     {...register("salePrice", {
-                      required: "Giá khuyến mãi là bắt buộc!",
                       min: {
                         value: 0,
                         message: "Giá khuyến mãi phải từ 0 trở lên!",
@@ -191,7 +190,7 @@ const EditProductDrawer = ({ id }) => {
                   <Error errorName={errors.salePrice} />
                 </div>
               </div>
-              
+
               {/* Danh mục */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Danh mục")} />
@@ -199,6 +198,7 @@ const EditProductDrawer = ({ id }) => {
                   <Multiselect
                     options={categories || []}
                     displayValue="name"
+                    showCheckbox={true}
                     onSelect={handleCategoryChange}
                     onRemove={handleCategoryChange}
                     selectedValues={selectedCategories}
@@ -206,7 +206,7 @@ const EditProductDrawer = ({ id }) => {
                   />
                 </div>
               </div>
-              
+
               {/* Màu sắc */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Màu sắc (Tùy chọn)")} />
@@ -214,11 +214,11 @@ const EditProductDrawer = ({ id }) => {
                   <Multiselect
                     options={colors || []}
                     displayValue="name"
+                    showCheckbox={true}
                     onSelect={handleColorChange}
                     onRemove={handleColorChange}
                     selectedValues={selectedColors}
                     placeholder={t("Chọn màu sắc sản phẩm")}
-                    customCloseIcon={<></>}
                     style={{
                       chips: { background: "#059669" },
                       optionContainer: { border: "1px solid #e9e9e9" }
@@ -226,7 +226,7 @@ const EditProductDrawer = ({ id }) => {
                   />
                 </div>
               </div>
-              
+
               {/* Kích thước */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Kích thước (Tùy chọn)")} />
@@ -234,11 +234,11 @@ const EditProductDrawer = ({ id }) => {
                   <Multiselect
                     options={sizes || []}
                     displayValue="name"
+                    showCheckbox={true}
                     onSelect={handleSizeChange}
                     onRemove={handleSizeChange}
                     selectedValues={selectedSizes}
                     placeholder={t("Chọn kích thước sản phẩm")}
-                    customCloseIcon={<></>}
                     style={{
                       chips: { background: "#059669" },
                       optionContainer: { border: "1px solid #e9e9e9" }
@@ -246,7 +246,7 @@ const EditProductDrawer = ({ id }) => {
                   />
                 </div>
               </div>
-              
+
               {/* Hình ảnh sản phẩm */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Hình ảnh sản phẩm")} />
@@ -285,39 +285,41 @@ const EditProductDrawer = ({ id }) => {
                         {t("(Hỗ trợ định dạng: jpeg, jpg, png, gif, webp. Tối đa 6 hình)")}
                       </em>
                     </div>
-                    
-                    {/* Hiển thị hình ảnh hiện có */}
+
+                    {/* Existing images */}
                     {existingImages.length > 0 && (
-                      <>
-                        <h4 className="text-sm font-medium mt-4 mb-2">Hình ảnh hiện tại:</h4>
-                        <div className="flex flex-row flex-wrap">
+                      <div className="mt-4">
+                        <h3 className="text-sm font-medium mb-2">Hình ảnh hiện tại:</h3>
+                        <div className="flex flex-wrap">
                           {existingImages.map((image, index) => (
-                            <div key={`existing-${index}`} className="relative w-24 h-24 mr-2 mb-2 border rounded-md overflow-hidden">
-                              <img 
-                                src={image.url} 
+                            <div key={index} className="relative w-24 h-24 mr-2 mb-2 border rounded-md overflow-hidden">
+                              <img
+                                src={image.url}
                                 alt={`existing ${index}`}
                                 className="w-full h-full object-cover"
                               />
-                              {image.isThumbnail && (
-                                <span className="absolute bottom-0 left-0 right-0 bg-emerald-600 text-white text-xs py-1 text-center">
-                                  Ảnh đại diện
-                                </span>
-                              )}
+                              <button
+                                type="button"
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs"
+                                onClick={() => removeExistingImage(index)}
+                              >
+                                <FiTrash />
+                              </button>
                             </div>
                           ))}
                         </div>
-                      </>
+                      </div>
                     )}
-                    
-                    {/* Hiển thị hình ảnh mới được chọn */}
+
+                    {/* New images */}
                     {imageUrls.length > 0 && (
-                      <>
-                        <h4 className="text-sm font-medium mt-4 mb-2">Hình ảnh mới sẽ thay thế toàn bộ hình ảnh cũ:</h4>
-                        <div className="flex flex-row flex-wrap">
+                      <div className="mt-4">
+                        <h3 className="text-sm font-medium mb-2">Hình ảnh mới:</h3>
+                        <div className="flex flex-wrap">
                           {imageUrls.map((image, index) => (
-                            <div key={`new-${index}`} className="relative w-24 h-24 mr-2 mb-2 border rounded-md overflow-hidden">
-                              <img 
-                                src={image.preview} 
+                            <div key={index} className="relative w-24 h-24 mr-2 mb-2 border rounded-md overflow-hidden">
+                              <img
+                                src={image.preview}
                                 alt={`preview ${index}`}
                                 className="w-full h-full object-cover"
                               />
@@ -331,32 +333,23 @@ const EditProductDrawer = ({ id }) => {
                             </div>
                           ))}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
-              
-              <div className="flex justify-between">
-                <Button 
-                  onClick={handleUpdateBasicInfo}
-                  className="h-12 px-6 bg-blue-600"
-                  disabled={isSubmitting}
-                >
-                  <FiSave className="mr-2" />
-                  {t("Lưu thông tin cơ bản")}
-                </Button>
-                
-                <Button 
+
+              <div className="flex justify-end gap-3">
+                <Button
                   onClick={handleUpdateImages}
-                  className="h-12 px-6 bg-purple-600"
+                  className="h-12 px-6 bg-green-600"
                   disabled={isSubmitting}
                 >
                   <FiSave className="mr-2" />
-                  {t("Lưu hình ảnh")}
+                  {t("Cập nhật hình ảnh")}
                 </Button>
-                
-                <Button 
+
+                <Button
                   onClick={handleContinueToVariants}
                   className="h-12 px-6"
                 >
@@ -365,17 +358,17 @@ const EditProductDrawer = ({ id }) => {
               </div>
             </div>
           )}
-          
+
           {activeTab === "variants" && (
             <div className="px-6 pt-8 flex-grow w-full h-full max-h-full pb-40 md:pb-32 lg:pb-32 xl:pb-32">
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4">{t("Số lượng theo biến thể")}</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  {selectedColors.length === 0 && selectedSizes.length === 0 
-                    ? t("Nhập tổng số lượng sản phẩm") 
+                  {selectedColors.length === 0 && selectedSizes.length === 0
+                    ? t("Nhập tổng số lượng sản phẩm")
                     : t("Nhập số lượng cho từng biến thể của sản phẩm")}
                 </p>
-                
+
                 <Table className="w-full whitespace-nowrap">
                   <TableHeader>
                     <TableRow>
@@ -411,30 +404,22 @@ const EditProductDrawer = ({ id }) => {
                     ))}
                   </TableBody>
                 </Table>
-                
+
                 <div className="flex justify-between mt-8">
-                  <Button 
-                    layout="outline" 
+                  <Button
+                    layout="outline"
                     onClick={() => handleTabChange("basic")}
                     className="h-12 px-6"
                   >
-                    <FiArrowLeft className="mr-2" /> {t("Quay lại")}
-                  </Button>
-                  
-                  <Button 
-                    onClick={handleUpdateVariants}
-                    className="h-12 px-6 bg-blue-600"
-                    disabled={isSubmitting}
-                  >
-                    <FiSave className="mr-2" />
-                    {t("Lưu số lượng")}
+                    <FiArrowLeft className="mr-2" />
+                    {t("Quay lại tab thông tin cơ bản để cập nhật")}
                   </Button>
                 </div>
               </div>
             </div>
           )}
-          
-          <DrawerButton title="Cập nhật sản phẩm" isSubmitting={isSubmitting} />
+
+          <DrawerButton title="sản phẩm" isSubmitting={isSubmitting} id={true} />
         </form>
       </Scrollbars>
     </>

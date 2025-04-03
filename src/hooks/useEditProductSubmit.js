@@ -24,6 +24,8 @@ const useEditProductSubmit = (id) => {
   const [activeTab, setActiveTab] = useState("basic");
   const [productVariants, setProductVariants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState({});
+  const [productData, setProductData] = useState(null);
   
   // React-hook-form
   const {
@@ -40,6 +42,15 @@ const useEditProductSubmit = (id) => {
   const { data: colors } = useAsync(ColorServices.getAllColors);
   const { data: sizes } = useAsync(SizeServices.getAllSizes);
   
+  // debug function
+  const logDebugInfo = (message, data) => {
+    console.log(`DEBUG ${message}:`, data);
+    setDebugInfo(prev => ({
+      ...prev,
+      [message]: data
+    }));
+  };
+  
   // Fetch product data when component mounts
   useEffect(() => {
     if (id) {
@@ -47,68 +58,113 @@ const useEditProductSubmit = (id) => {
     }
   }, [id]);
   
-  // Fetch product details
+  // Update master data selections when both product data and master data are available
+  useEffect(() => {
+    // Log master data for debugging
+    setDebugInfo(prev => ({
+      ...prev,
+      categories: categories ? categories.length : 0,
+      colors: colors ? colors.length : 0,
+      sizes: sizes ? sizes.length : 0
+    }));
+    
+    if (!productData) return;
+    
+    // Process categories when categories data is loaded
+    if (categories && productData.categorySlugs) {
+      logDebugInfo('categorySlugs', productData.categorySlugs);
+      logDebugInfo('availableCategories', categories.map(c => c.slug));
+      
+      const selectedCats = categories.filter(cat => 
+        productData.categorySlugs.includes(cat.slug)
+      );
+      logDebugInfo('selectedCategories', selectedCats);
+      setSelectedCategories(selectedCats);
+    }
+    
+    // Process colors when colors data is loaded
+    if (colors && productData.colorNames) {
+      logDebugInfo('colorNames', productData.colorNames);
+      logDebugInfo('availableColors', colors.map(c => c.name));
+      
+      const selectedCols = colors.filter(color => 
+        productData.colorNames.includes(color.name)
+      );
+      logDebugInfo('selectedColors', selectedCols);
+      setSelectedColors(selectedCols);
+    }
+    
+    // Process sizes when sizes data is loaded
+    if (sizes && productData.sizeNames) {
+      logDebugInfo('sizeNames', productData.sizeNames);
+      logDebugInfo('availableSizes', sizes.map(s => s.name));
+      
+      const selectedSzs = sizes.filter(size => 
+        productData.sizeNames.includes(size.name)
+      );
+      logDebugInfo('selectedSizes', selectedSzs);
+      setSelectedSizes(selectedSzs);
+    }
+    
+    // Process variants if available
+    if (productData.variants && productData.variants.length > 0) {
+      logDebugInfo('variantsFromProductData', productData.variants);
+      setProductVariants(productData.variants);
+    }
+  }, [categories, colors, sizes, productData]);
+  
   const fetchProductData = async () => {
     try {
       setLoading(true);
       
-      // Get product details
+      // 1. Fetch product details
       const productResponse = await ProductServices.getProductById(id);
+      logDebugInfo('productResponse', productResponse);
       
       if (productResponse.success) {
-        const product = productResponse.data;
+        const data = productResponse.data;
+        logDebugInfo('productData', data);
+        
+        // Save product data for later processing when master data is loaded
+        setProductData(data);
         
         // Set form values
-        setValue("name", product.name);
-        setValue("description", product.description);
-        setValue("price", product.price);
-        setValue("salePrice", product.salePrice);
-        
-        // Set selected categories
-        if (categories && product.categorySlugs) {
-          const selectedCats = categories.filter(cat => 
-            product.categorySlugs.includes(cat.slug)
-          );
-          setSelectedCategories(selectedCats);
-        }
-        
-        // Set selected colors
-        if (colors && product.colorNames) {
-          const selectedCols = colors.filter(color => 
-            product.colorNames.includes(color.name)
-          );
-          setSelectedColors(selectedCols);
-        }
-        
-        // Set selected sizes
-        if (sizes && product.sizeNames) {
-          const selectedSiz = sizes.filter(size => 
-            product.sizeNames.includes(size.name)
-          );
-          setSelectedSizes(selectedSiz);
-        }
-        
-        // Set variants
-        if (product.variants) {
-          setProductVariants(product.variants);
-        }
+        setValue("name", data.name);
+        setValue("description", data.description || "");
+        setValue("price", data.price);
+        setValue("salePrice", data.salePrice || 0);
         
         // Get product images
-        try {
-          const imagesResponse = await fetch(`http://localhost:8080/product/${id}/images`);
-          const imagesData = await imagesResponse.json();
+        const imagesResponse = await ProductServices.getProductImages(id);
+        logDebugInfo('imagesResponse', imagesResponse);
+        
+        if (imagesResponse.success && imagesResponse.data._embedded && imagesResponse.data._embedded.image) {
+          const images = imagesResponse.data._embedded.image.map(img => ({
+            id: img.id,
+            url: img.url,
+            isThumbnail: img.thumbnail
+          }));
           
-          if (imagesData._embedded && imagesData._embedded.image) {
-            const images = imagesData._embedded.image.map(img => ({
-              id: img.id,
-              url: img.url,
-              isThumbnail: img.thumbnail
-            }));
-            
-            setExistingImages(images);
+          logDebugInfo('processedImages', images);
+          setExistingImages(images);
+        }
+        
+        // Get product variants if not included in product response
+        if (!data.variants || data.variants.length === 0) {
+          const variantsResponse = await ProductServices.getProductVariants(id);
+          logDebugInfo('variantsResponse', variantsResponse);
+          
+          if (variantsResponse.success && variantsResponse.data._embedded && variantsResponse.data._embedded.variants) {
+            logDebugInfo('variantsFromAPI', variantsResponse.data._embedded.variants);
+            setProductVariants(variantsResponse.data._embedded.variants);
+          } else {
+            // Default variant if no variants are found
+            setProductVariants([{
+              colorName: null,
+              sizeName: null,
+              quantity: 0
+            }]);
           }
-        } catch (error) {
-          console.error("Error fetching product images:", error);
         }
       } else {
         notifyError(productResponse.message || "Không thể tải thông tin sản phẩm!");
@@ -193,9 +249,13 @@ const useEditProductSubmit = (id) => {
       return false;
     }
     
-    // Check if total quantity is greater than 0
-    const totalQuantity = productVariants.reduce((sum, variant) => sum + Number(variant.quantity || 0), 0);
-    return totalQuantity > 0;
+    // Kiểm tra xem tất cả các biến thể đã được nhập số lượng chưa (phải > 0)
+    const zeroQuantityVariants = productVariants.filter(variant => variant.quantity === 0);
+    if (zeroQuantityVariants.length > 0) {
+      return false;
+    }
+    
+    return true;
   };
   
   // Handle form submission (update everything)
@@ -203,10 +263,10 @@ const useEditProductSubmit = (id) => {
     try {
       setIsSubmitting(true);
       
-      // Validate basic requirements
-      if (existingImages.length === 0 && imageUrls.length === 0) {
+      // Validate
+      if (!data.name) {
         setIsSubmitting(false);
-        return notifyError("Vui lòng chọn ít nhất 1 hình ảnh!");
+        return notifyError("Tên sản phẩm là bắt buộc!");
       }
       
       if (selectedCategories.length === 0) {
@@ -214,75 +274,83 @@ const useEditProductSubmit = (id) => {
         return notifyError("Vui lòng chọn ít nhất một danh mục!");
       }
       
-      if (Number(data.salePrice) > Number(data.price)) {
+      if (data.salePrice && Number(data.salePrice) > Number(data.price)) {
         setIsSubmitting(false);
         return notifyError("Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc!");
       }
       
-      // Validate variants
-      if (!validateVariants()) {
-        setIsSubmitting(false);
-        return notifyError("Vui lòng nhập số lượng hợp lệ cho các biến thể sản phẩm!");
+      // Validate variants if they exist
+      if (productVariants.length > 0) {
+        const invalidVariants = productVariants.filter(variant => variant.quantity < 0);
+        if (invalidVariants.length > 0) {
+          setIsSubmitting(false);
+          return notifyError("Số lượng sản phẩm không được âm!");
+        }
       }
       
-      // Prepare product data
-      const productData = {
+      // Prepare data
+      const productUpdateData = {
         name: data.name,
         description: data.description,
         price: Number(data.price),
-        salePrice: Number(data.salePrice),
+        salePrice: data.salePrice ? Number(data.salePrice) : 0,
         categorySlugs: selectedCategories.map(cat => cat.slug),
         colorNames: selectedColors.map(color => color.name),
         sizeNames: selectedSizes.map(size => size.name)
       };
       
-      // 1. Update basic product info
-      const response = await ProductServices.updateProduct(id, productData);
+      console.log("Sending product update with data:", productUpdateData);
+      
+      // Step 1: Update basic info
+      const response = await ProductServices.updateProduct(id, productUpdateData);
       
       if (response.success) {
-        try {
-          // 2. Update images if new images were added
-          if (imageUrls.length > 0) {
-            // Upload new images to Cloudinary
-            const files = imageUrls.map(img => img.file);
-            const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
+        // Step 2: Update images if changed
+        if (existingImages.length > 0 || imageUrls.length > 0) {
+          try {
+            let allImageUrls = [...existingImages.map(img => img.url)];
             
-            // Combine existing and new images
-            const allImageUrls = [
-              ...existingImages.map(img => img.url),
-              ...cloudinaryUrls
-            ];
+            // Upload new images to Cloudinary if any
+            if (imageUrls.length > 0) {
+              const files = imageUrls.map(img => img.file);
+              const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
+              allImageUrls = [...allImageUrls, ...cloudinaryUrls];
+            }
             
             // Update product images
             await ProductServices.updateProductImages(id, {
               imageUrls: allImageUrls
             });
-          } else if (existingImages.length > 0) {
-            // If no new images but existing images changed
-            await ProductServices.updateProductImages(id, {
-              imageUrls: existingImages.map(img => img.url)
-            });
+          } catch (imageError) {
+            console.error("Error updating images:", imageError);
+            notifyError("Cập nhật thông tin cơ bản thành công, nhưng cập nhật hình ảnh thất bại!");
           }
-          
-          // 3. Update product variants
-          await ProductServices.updateProductVariants(id, {
+        }
+        
+        // Step 3: Update variants
+        try {
+          const variantResponse = await ProductServices.updateProductVariants(id, {
             variants: productVariants
           });
           
-          // Success notification
-          notifySuccess("Cập nhật sản phẩm thành công!");
-          setIsUpdate(true);
-          closeDrawer();
-        } catch (error) {
-          console.error("Lỗi khi xử lý ảnh hoặc variants:", error);
-          notifyError("Cập nhật sản phẩm thành công nhưng có lỗi xảy ra khi xử lý hình ảnh hoặc biến thể!");
+          if (!variantResponse.success) {
+            notifyError("Cập nhật thông tin sản phẩm thành công, nhưng cập nhật biến thể thất bại!");
+          }
+        } catch (variantErr) {
+          console.error("Error updating variants:", variantErr);
+          notifyError("Cập nhật thông tin cơ bản thành công, nhưng cập nhật biến thể thất bại!");
         }
+        
+        notifySuccess("Cập nhật sản phẩm thành công!");
+        setIsUpdate(true);
+        closeDrawer();
       } else {
+        console.error("Error updating product:", response);
         notifyError(response.message || "Có lỗi xảy ra khi cập nhật sản phẩm!");
       }
     } catch (err) {
-      console.error(err);
-      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra!");
+      console.error("Error in product update:", err);
+      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi cập nhật sản phẩm!");
     } finally {
       setIsSubmitting(false);
     }
@@ -306,7 +374,7 @@ const useEditProductSubmit = (id) => {
         return notifyError("Vui lòng chọn ít nhất một danh mục!");
       }
       
-      if (Number(data.salePrice) > Number(data.price)) {
+      if (data.salePrice && Number(data.salePrice) > Number(data.price)) {
         setIsSubmitting(false);
         return notifyError("Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc!");
       }
@@ -316,24 +384,45 @@ const useEditProductSubmit = (id) => {
         name: data.name,
         description: data.description,
         price: Number(data.price),
-        salePrice: Number(data.salePrice),
+        salePrice: data.salePrice ? Number(data.salePrice) : 0,
         categorySlugs: selectedCategories.map(cat => cat.slug),
         colorNames: selectedColors.map(color => color.name),
         sizeNames: selectedSizes.map(size => size.name)
       };
       
-      // Update basic info
+      console.log("Sending product update with data:", productData);
+      
+      // Step 1: Update basic info
       const response = await ProductServices.updateProduct(id, productData);
       
       if (response.success) {
-        notifySuccess("Cập nhật thông tin cơ bản thành công!");
+        // Step 2: Update variants
+        try {
+          const variantResponse = await ProductServices.updateProductVariants(id, {
+            variants: productVariants
+          });
+          
+          if (variantResponse.success) {
+            notifySuccess("Cập nhật thông tin sản phẩm và biến thể thành công!");
+          } else {
+            notifyError("Cập nhật thông tin cơ bản thành công, nhưng cập nhật biến thể thất bại!");
+          }
+        } catch (variantErr) {
+          console.error("Error updating variants:", variantErr);
+          notifyError("Cập nhật thông tin cơ bản thành công, nhưng cập nhật biến thể thất bại!");
+        }
+        
         setIsUpdate(true);
+        
+        // Refresh product data to show updated info immediately
+        fetchProductData();
       } else {
-        notifyError(response.message || "Có lỗi xảy ra khi cập nhật thông tin sản phẩm!");
+        console.error("Error updating basic info:", response);
+        notifyError(response.message || "Có lỗi xảy ra khi cập nhật thông tin cơ bản!");
       }
     } catch (err) {
-      console.error(err);
-      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra!");
+      console.error("Error in handleUpdateBasicInfo:", err);
+      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi cập nhật thông tin cơ bản!");
     } finally {
       setIsSubmitting(false);
     }
@@ -344,19 +433,30 @@ const useEditProductSubmit = (id) => {
     try {
       setIsSubmitting(true);
       
-      // Validate if new images are selected
-      if (imageUrls.length === 0) {
+      // Validate if there are images to update
+      if (existingImages.length === 0 && imageUrls.length === 0) {
         setIsSubmitting(false);
-        return notifyError("Vui lòng chọn ít nhất 1 hình ảnh mới!");
+        return notifyError("Vui lòng chọn ít nhất 1 hình ảnh!");
       }
       
-      // Upload new images to Cloudinary
-      const files = imageUrls.map(img => img.file);
-      const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
+      let allImageUrls = [...existingImages.map(img => img.url)];
       
-      // Replace product images with new ones
+      // Upload new images to Cloudinary if any
+      if (imageUrls.length > 0) {
+        try {
+          const files = imageUrls.map(img => img.file);
+          const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
+          allImageUrls = [...allImageUrls, ...cloudinaryUrls];
+        } catch (uploadError) {
+          console.error("Error uploading images:", uploadError);
+          setIsSubmitting(false);
+          return notifyError("Đã xảy ra lỗi khi tải lên hình ảnh mới: " + uploadError.message);
+        }
+      }
+      
+      // Update product images
       const response = await ProductServices.updateProductImages(id, {
-        imageUrls: cloudinaryUrls
+        imageUrls: allImageUrls
       });
       
       if (response.success) {
@@ -364,29 +464,24 @@ const useEditProductSubmit = (id) => {
         setIsUpdate(true);
         setImageUrls([]);  // Clear new images
         
-        // Refresh images data
-        try {
-          const imagesResponse = await fetch(`http://localhost:8080/product/${id}/images`);
-          const imagesData = await imagesResponse.json();
+        // Refresh product data to show updated images immediately
+        const refreshResponse = await ProductServices.getProductImages(id);
+        if (refreshResponse.success && refreshResponse.data._embedded && refreshResponse.data._embedded.image) {
+          const images = refreshResponse.data._embedded.image.map(img => ({
+            id: img.id,
+            url: img.url,
+            isThumbnail: img.thumbnail
+          }));
           
-          if (imagesData._embedded && imagesData._embedded.image) {
-            const images = imagesData._embedded.image.map(img => ({
-              id: img.id,
-              url: img.url,
-              isThumbnail: img.thumbnail
-            }));
-            
-            setExistingImages(images);
-          }
-        } catch (error) {
-          console.error("Error refreshing product images:", error);
+          setExistingImages(images);
         }
       } else {
+        console.error("Error updating product images:", response);
         notifyError(response.message || "Có lỗi xảy ra khi cập nhật hình ảnh!");
       }
     } catch (err) {
-      console.error(err);
-      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra!");
+      console.error("Error in handleUpdateImages:", err);
+      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi cập nhật hình ảnh!");
     } finally {
       setIsSubmitting(false);
     }
@@ -400,8 +495,10 @@ const useEditProductSubmit = (id) => {
       // Validate variants
       if (!validateVariants()) {
         setIsSubmitting(false);
-        return notifyError("Vui lòng nhập số lượng hợp lệ cho các biến thể sản phẩm!");
+        return notifyError("Vui lòng nhập số lượng > 0 cho tất cả các biến thể sản phẩm!");
       }
+      
+      console.log("Updating variants with data:", { variants: productVariants });
       
       // Update variants
       const response = await ProductServices.updateProductVariants(id, {
@@ -411,12 +508,25 @@ const useEditProductSubmit = (id) => {
       if (response.success) {
         notifySuccess("Cập nhật biến thể thành công!");
         setIsUpdate(true);
+        
+        // Refresh product data to reflect changes immediately
+        if (productData && productData.variants) {
+          // If product data already includes variants, update them
+          setProductData({
+            ...productData,
+            variants: productVariants
+          });
+        } else {
+          // Otherwise reload product data
+          fetchProductData();
+        }
       } else {
+        console.error("Error updating variants:", response);
         notifyError(response.message || "Có lỗi xảy ra khi cập nhật biến thể!");
       }
     } catch (err) {
-      console.error(err);
-      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra!");
+      console.error("Error in handleUpdateVariants:", err);
+      notifyError(err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi cập nhật biến thể!");
     } finally {
       setIsSubmitting(false);
     }
@@ -426,26 +536,18 @@ const useEditProductSubmit = (id) => {
   const handleImageUpload = (files) => {
     if (!files || files.length === 0) return;
     
-    // Clear previous uploads first
-    imageUrls.forEach(image => {
-      if (image.preview) {
-        URL.revokeObjectURL(image.preview);
-      }
-    });
-    setImageUrls([]);
-    
     const newFiles = Array.from(files).map(file => ({
       file,
       preview: URL.createObjectURL(file)
     }));
     
-    // Limit to 6 images
-    if (newFiles.length > 6) {
+    // Limit to 6 images total (existing + new)
+    if (existingImages.length + imageUrls.length + newFiles.length > 6) {
       return notifyError("Chỉ được tải lên tối đa 6 hình ảnh!");
     }
     
-    // Set new files (replacing any previous uploads)
-    setImageUrls(newFiles);
+    // Add new files
+    setImageUrls(prev => [...prev, ...newFiles]);
   };
   
   // Remove new image
@@ -461,16 +563,19 @@ const useEditProductSubmit = (id) => {
   
   // Handle category selection
   const handleCategoryChange = (selectedOptions) => {
+    console.log("Selected categories:", selectedOptions);
     setSelectedCategories(selectedOptions);
   };
   
   // Handle color selection
   const handleColorChange = (selectedOptions) => {
+    console.log("Selected colors:", selectedOptions);
     setSelectedColors(selectedOptions);
   };
   
   // Handle size selection
   const handleSizeChange = (selectedOptions) => {
+    console.log("Selected sizes:", selectedOptions);
     setSelectedSizes(selectedOptions);
   };
   
@@ -481,14 +586,14 @@ const useEditProductSubmit = (id) => {
   
   // Handle continue to variants tab
   const handleContinueToVariants = () => {
-    const basicData = getValues();
+    const data = getValues();
     
     // Validate basic form data
-    if (!basicData.name) {
+    if (!data.name) {
       return notifyError("Vui lòng nhập tên sản phẩm!");
     }
     
-    if (!basicData.price) {
+    if (!data.price) {
       return notifyError("Vui lòng nhập giá sản phẩm!");
     }
     
@@ -496,7 +601,7 @@ const useEditProductSubmit = (id) => {
       return notifyError("Vui lòng chọn ít nhất một danh mục!");
     }
     
-    if (Number(basicData.salePrice) > Number(basicData.price)) {
+    if (data.salePrice && Number(data.salePrice) > Number(data.price)) {
       return notifyError("Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc!");
     }
     
@@ -532,7 +637,9 @@ const useEditProductSubmit = (id) => {
     loading,
     handleUpdateBasicInfo,
     handleUpdateImages,
-    handleUpdateVariants
+    handleUpdateVariants,
+    debugInfo,
+    refreshData: fetchProductData
   };
 };
 
