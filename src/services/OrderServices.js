@@ -30,6 +30,25 @@ const OrderServices = {
     );
   },
 
+  getAdminOrders: async (params) => {
+    // Create query parameters from filters
+    const queryParams = new URLSearchParams();
+    
+    // Add pagination parameters
+    if (params.page) queryParams.append('page', params.page);
+    if (params.size) queryParams.append('size', params.size);
+    
+    // Add optional filter parameters if they exist
+    if (params.orderId) queryParams.append('orderId', params.orderId);
+    if (params.orderStatusCode) queryParams.append('orderStatusCode', params.orderStatusCode);
+    if (params.paymentMethodCode) queryParams.append('paymentMethodCode', params.paymentMethodCode);
+    if (params.shippingMethodCode) queryParams.append('shippingMethodCode', params.shippingMethodCode);
+    if (params.startDate) queryParams.append('startDate', params.startDate);
+    if (params.endDate) queryParams.append('endDate', params.endDate);
+    
+    return requests.get(`/admin/orders?${queryParams.toString()}`);
+  },
+
   getAllOrdersTwo: async ({ invoice, body, headers }) => {
     const searchInvoice = invoice !== null ? invoice : "";
     return requests.get(`/orders/all?invoice=${searchInvoice}`, body, headers);
@@ -105,6 +124,18 @@ const OrderServices = {
   //for sending email invoice to customer
   sendEmailInvoiceToCustomer: async (body) => {
     return requests.post("/order/customer/invoice", body);
+  },
+
+  getPaymentMethods: async () => {
+    return requests.get("/paymentMethod");
+  },
+
+  getShippingMethods: async () => {
+    return requests.get("/shippingMethod");
+  },
+
+  getOrderStatuses: async () => {
+    return requests.get("/orderStatus");
   },
 };
 

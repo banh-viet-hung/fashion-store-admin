@@ -12,7 +12,7 @@ import {
   TableFooter,
   TableHeader,
 } from "@windmill/react-ui";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { IoCloudDownloadOutline } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 import exportFromJSON from "export-from-json";
@@ -33,103 +33,186 @@ import AnimatedContent from "@/components/common/AnimatedContent";
 
 const Orders = () => {
   const {
-    time,
-    setTime,
-    status,
-    endDate,
-    setStatus,
-    setEndDate,
-    startDate,
     currentPage,
     searchText,
     searchRef,
-    method,
-    setMethod,
-    setStartDate,
-    setSearchText,
-    handleChangePage,
-    handleSubmitForAll,
     resultsPerPage,
+    handleChangePage,
   } = useContext(SidebarContext);
 
   const { t } = useTranslation();
 
   const [loadingExport, setLoadingExport] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [shippingMethods, setShippingMethods] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    size: 3,
+    totalPages: 0,
+    totalElements: 0
+  });
+  const [filters, setFilters] = useState({
+    orderId: '',
+    orderStatusCode: '',
+    paymentMethodCode: '',
+    shippingMethodCode: '',
+    startDate: null,
+    endDate: null
+  });
 
-  const { data, loading, error } = useAsync(() =>
-    OrderServices.getAllOrders({
-      day: time,
-      method: method,
-      status: status,
-      page: currentPage,
-      endDate: endDate,
-      startDate: startDate,
-      limit: resultsPerPage,
-      customerName: searchText,
-    })
-  );
+  // Format date to MM/dd/yyyy
+  const formatDate = (date) => {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
 
-  const { currency, getNumber, getNumberTwo } = useUtilsFunction();
-
-  const { dataTable, serviceData } = useFilter(data?.orders);
-
-  const handleDownloadOrders = async () => {
+  // Fetch orders with current filters and pagination
+  const fetchOrders = async () => {
+    setLoading(true);
     try {
-      setLoadingExport(true);
-      const res = await OrderServices.getAllOrders({
-        page: 1,
-        day: time,
-        method: method,
-        status: status,
-        endDate: endDate,
-        download: true,
-        startDate: startDate,
-        limit: data?.totalDoc,
-        customerName: searchText,
-      });
+      // Chuyển đổi ngày thành định dạng MM/dd/yyyy
+      const formattedFilters = {
+        ...filters,
+        page: pagination.page,
+        size: pagination.size,
+        startDate: filters.startDate ? formatDate(filters.startDate) : undefined,
+        endDate: filters.endDate ? formatDate(filters.endDate) : undefined
+      };
 
-      // console.log("handleDownloadOrders", res);
-      const exportData = res?.orders?.map((order) => {
-        return {
-          _id: order._id,
-          invoice: order.invoice,
-          subTotal: getNumberTwo(order.subTotal),
-          shippingCost: getNumberTwo(order.shippingCost),
-          discount: getNumberTwo(order?.discount),
-          total: getNumberTwo(order.total),
-          paymentMethod: order.paymentMethod,
-          status: order.status,
-          user_info: order?.user_info?.name,
-          createdAt: order.createdAt,
-          updatedAt: order.updatedAt,
-        };
+      const response = await OrderServices.getAdminOrders(formattedFilters);
+      const adaptedOrders = adaptOrdersForTable(response.data.content);
+      setOrders(adaptedOrders);
+      setPagination({
+        ...pagination,
+        totalPages: response.data.totalPages,
+        totalElements: response.data.totalElements
       });
-      // console.log("exportData", exportData);
-
-      exportFromJSON({
-        data: exportData,
-        fileName: "orders",
-        exportType: exportFromJSON.types.csv,
-      });
-      setLoadingExport(false);
-    } catch (err) {
-      setLoadingExport(false);
-      // console.log("err on orders download", err);
-      notifyError(err?.response?.data?.message || err?.message);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      notifyError(error?.response?.data?.message || "Không thể tải danh sách đơn hàng");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // handle reset field
-  const handleResetField = () => {
-    setTime("");
-    setMethod("");
-    setStatus("");
-    setEndDate("");
-    setStartDate("");
-    setSearchText("");
-    searchRef.current.value = "";
+  // Adapter để chuyển đổi dữ liệu từ API mới sang định dạng OrderTable
+  const adaptOrdersForTable = (apiOrders) => {
+    return apiOrders.map(order => {
+      // Tìm phương thức thanh toán từ danh sách
+      let paymentMethodName = "";
+      if (order.paymentMethodCode) {
+        const method = paymentMethods.find(m => m.code === order.paymentMethodCode);
+        paymentMethodName = method ? method.name : "Không xác định";
+      } else {
+        paymentMethodName = filters.paymentMethodCode ?
+          findMethodNameByCode(paymentMethods, filters.paymentMethodCode) :
+          "Chờ xác nhận";
+      }
+
+      return {
+        _id: order.id.toString(),
+        invoice: order.id.toString(),
+        updatedDate: order.orderDate,
+        user_info: { name: "Khách hàng" }, // Thông tin mặc định
+        paymentMethod: paymentMethodName,
+        total: order.total,
+        status: order.currentStatus,
+        originalData: order
+      };
+    });
   };
-  // console.log("data in orders page", data);
+
+  // Tìm tên phương thức thanh toán dựa trên mã
+  const findMethodNameByCode = (methods, code) => {
+    if (!code || !methods.length) return "";
+    const method = methods.find(m => m.code === code);
+    return method ? method.name : "";
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [pagination.page, pagination.size]);
+
+  useEffect(() => {
+    const fetchMethods = async () => {
+      try {
+        const paymentRes = await OrderServices.getPaymentMethods();
+        if (paymentRes && paymentRes._embedded && paymentRes._embedded.paymentMethod) {
+          setPaymentMethods(paymentRes._embedded.paymentMethod);
+        }
+
+        const shippingRes = await OrderServices.getShippingMethods();
+        if (shippingRes && shippingRes._embedded && shippingRes._embedded.shippingMethod) {
+          setShippingMethods(shippingRes._embedded.shippingMethod);
+        }
+
+        const statusRes = await OrderServices.getOrderStatuses();
+        if (statusRes && statusRes._embedded && statusRes._embedded.orderStatus) {
+          setOrderStatuses(statusRes._embedded.orderStatus);
+        }
+      } catch (error) {
+        notifyError("Không thể tải dữ liệu từ server");
+      }
+    };
+
+    fetchMethods();
+  }, []);
+
+  const { currency, getNumber, getNumberTwo } = useUtilsFunction();
+
+  // Handle filter changes
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle date changes
+  const handleDateChange = (field, value) => {
+    const date = value ? new Date(value) : null;
+    setFilters(prev => ({
+      ...prev,
+      [field]: date
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
+    fetchOrders();
+  };
+
+  // Handle reset filters
+  const handleResetField = () => {
+    setFilters({
+      orderId: '',
+      orderStatusCode: '',
+      paymentMethodCode: '',
+      shippingMethodCode: '',
+      startDate: null,
+      endDate: null
+    });
+
+    if (searchRef.current) {
+      searchRef.current.value = '';
+    }
+
+    // Reset pagination to first page
+    setPagination(prev => ({
+      ...prev,
+      page: 1
+    }));
+
+    // Fetch orders with reset filters
+    fetchOrders();
+  };
 
   return (
     <>
@@ -138,7 +221,7 @@ const Orders = () => {
       <AnimatedContent>
         <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
           <CardBody>
-            <form onSubmit={handleSubmitForAll}>
+            <form onSubmit={handleSubmit}>
               <div className="grid gap-4 lg:gap-4 xl:gap-6 md:gap-2 md:grid-cols-5 py-2">
                 <div>
                   <Input
@@ -146,97 +229,75 @@ const Orders = () => {
                     type="search"
                     name="search"
                     placeholder="Nhập mã đơn hàng"
+                    value={filters.orderId}
+                    onChange={(e) => handleFilterChange('orderId', e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <Select onChange={(e) => setStatus(e.target.value)}>
-                    <option value="Status" defaultValue hidden>
+                  <Select
+                    value={filters.orderStatusCode}
+                    onChange={(e) => handleFilterChange('orderStatusCode', e.target.value)}
+                  >
+                    <option value="" defaultValue>
                       {t("Trạng thái đơn hàng")}
                     </option>
-                    <option value="Delivered">{t("PageOrderDelivered")}</option>
-                    <option value="Pending">{t("PageOrderPending")}</option>
-                    <option value="Processing">
-                      {t("PageOrderProcessing")}
-                    </option>
-                    <option value="Cancel">{t("OrderCancel")}</option>
+                    {orderStatuses.map((status) => (
+                      <option key={status.description} value={status.description}>
+                        {status.statusName}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
                 <div>
-                  <Select onChange={(e) => setTime(e.target.value)}>
-                    <option value="Order limits" defaultValue hidden>
-                      {t("Đặt hàng gần đây")}
+                  <Select
+                    value={filters.shippingMethodCode}
+                    onChange={(e) => handleFilterChange('shippingMethodCode', e.target.value)}
+                  >
+                    <option value="" defaultValue>
+                      {t("Phương thức vận chuyển")}
                     </option>
-                    <option value="5">{t("DaysOrders5")}</option>
-                    <option value="7">{t("DaysOrders7")}</option>
-                    <option value="15">{t("DaysOrders15")}</option>
-                    <option value="30">{t("DaysOrders30")}</option>
+                    {shippingMethods.map((method) => (
+                      <option key={method.code} value={method.code}>
+                        {method.name}
+                      </option>
+                    ))}
                   </Select>
                 </div>
                 <div>
-                  <Select onChange={(e) => setMethod(e.target.value)}>
-                    <option value="Method" defaultValue hidden>
+                  <Select
+                    value={filters.paymentMethodCode}
+                    onChange={(e) => handleFilterChange('paymentMethodCode', e.target.value)}
+                  >
+                    <option value="" defaultValue>
                       {t("Phương thức thanh toán")}
                     </option>
-
-                    <option value="Cash">{t("Cash")}</option>
-                    <option value="Card">{t("Card")}</option>
-                    <option value="Credit">{t("Credit")}</option>
+                    {paymentMethods.map((method) => (
+                      <option key={method.code} value={method.code}>
+                        {method.name}
+                      </option>
+                    ))}
                   </Select>
-                </div>
-                <div>
-                  {loadingExport ? (
-                    <Button
-                      disabled={true}
-                      type="button"
-                      className="h-12 w-full"
-                    >
-                      <img
-                        src={spinnerLoadingImage}
-                        alt="Loading"
-                        width={20}
-                        height={10}
-                      />{" "}
-                      <span className="font-serif ml-2 font-light">
-                        Processing
-                      </span>
-                    </Button>
-                  ) : (
-                    <button
-                      onClick={handleDownloadOrders}
-                      disabled={data?.orders?.length <= 0 || loadingExport}
-                      type="button"
-                      className={`${
-                        (data?.orders?.length <= 0 || loadingExport) &&
-                        "opacity-50 cursor-not-allowed bg-emerald-600"
-                      } flex items-center justify-center text-sm leading-5 h-12 w-full text-center transition-colors duration-150 font-medium px-6 py-2 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600 `}
-                    >
-                      Tải xuống tất cả
-                      <span className="ml-2 text-base">
-                        <IoCloudDownloadOutline />
-                      </span>
-                    </button>
-                  )}
                 </div>
               </div>
 
               <div className="grid gap-4 lg:gap-6 xl:gap-6 lg:grid-cols-3 xl:grid-cols-3 md:grid-cols-3 sm:grid-cols-1 py-2">
                 <div>
-                  <Label>Start Date</Label>
+                  <Label>Ngày bắt đầu</Label>
                   <Input
                     type="date"
                     name="startDate"
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => handleDateChange('startDate', e.target.value)}
                   />
                 </div>
 
                 <div>
-                  <Label>End Date</Label>
+                  <Label>Ngày kết thúc</Label>
                   <Input
                     type="date"
-                    name="startDate"
-                    onChange={(e) => setEndDate(e.target.value)}
+                    name="endDate"
+                    onChange={(e) => handleDateChange('endDate', e.target.value)}
                   />
                 </div>
                 <div className="mt-2 md:mt-0 flex items-center xl:gap-x-4 gap-x-1 flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
@@ -269,62 +330,37 @@ const Orders = () => {
           </CardBody>
         </Card>
       </AnimatedContent>
-      {data?.methodTotals?.length > 0 && (
-        <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 rounded-t-lg rounded-0 mb-4">
-          <CardBody>
-            <div className="flex gap-1">
-              {data?.methodTotals?.map((el, i) => (
-                <div key={i + 1} className="dark:text-gray-300">
-                  {el?.method && (
-                    <>
-                      <span className="font-medium"> {el.method}</span> :{" "}
-                      <span className="font-semibold mr-2">
-                        {currency}
-                        {getNumber(el.total)}
-                      </span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardBody>
-        </Card>
-      )}
 
       {loading ? (
         <TableLoading row={12} col={7} width={160} height={20} />
-      ) : error ? (
-        <span className="text-center mx-auto text-red-500">{error}</span>
-      ) : serviceData?.length !== 0 ? (
+      ) : orders.length !== 0 ? (
         <TableContainer className="mb-8 dark:bg-gray-900">
           <Table>
             <TableHeader>
               <tr>
-                <TableCell>{t("InvoiceNo")}</TableCell>
-                <TableCell>{t("TimeTbl")}</TableCell>
-                <TableCell>{t("CustomerName")}</TableCell>
-                <TableCell>{t("MethodTbl")}</TableCell>
-                <TableCell>{t("AmountTbl")}</TableCell>
-                <TableCell>{t("OderStatusTbl")}</TableCell>
-                <TableCell>{t("ActionTbl")}</TableCell>
+                <TableCell>{t("Mã đơn hàng")}</TableCell>
+                <TableCell>{t("Ngày đặt")}</TableCell>
+                <TableCell>{t("Tổng tiền")}</TableCell>
+                <TableCell>{t("Trạng thái đơn hàng")}</TableCell>
+                <TableCell>{t("Thao tác")}</TableCell>
                 <TableCell className="text-right">{t("InvoiceTbl")}</TableCell>
               </tr>
             </TableHeader>
 
-            <OrderTable orders={dataTable} />
+            <OrderTable orders={orders} fetchOrders={fetchOrders} />
           </Table>
 
           <TableFooter>
             <Pagination
-              totalResults={data?.totalDoc}
-              resultsPerPage={resultsPerPage}
-              onChange={handleChangePage}
+              totalResults={pagination.totalElements}
+              resultsPerPage={pagination.size}
+              onChange={(p) => setPagination(prev => ({ ...prev, page: p }))}
               label="Table navigation"
             />
           </TableFooter>
         </TableContainer>
       ) : (
-        <NotFound title="Sorry, There are no orders right now." />
+        <NotFound title="Không tìm thấy đơn hàng nào." />
       )}
     </>
   );
