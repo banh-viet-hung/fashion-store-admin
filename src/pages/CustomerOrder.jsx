@@ -23,25 +23,25 @@ const CustomerOrder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchUserOrders = async () => {
-      try {
-        setIsLoading(true);
-        const response = await OrderServices.getUserOrders(id);
-        if (response.success) {
-          setOrderData(response.data || []);
-        } else {
-          setError(response.message || "Không thể tải đơn hàng");
-          notifyError(response.message || "Không thể tải đơn hàng");
-        }
-      } catch (err) {
-        setError(err.message || "Đã xảy ra lỗi khi tải đơn hàng");
-        notifyError(err.message || "Đã xảy ra lỗi khi tải đơn hàng");
-      } finally {
-        setIsLoading(false);
+  const fetchUserOrders = async () => {
+    try {
+      setIsLoading(true);
+      const response = await OrderServices.getUserOrders(id);
+      if (response.success) {
+        setOrderData(response.data || []);
+      } else {
+        setError(response.message || "Không thể tải đơn hàng");
+        notifyError(response.message || "Không thể tải đơn hàng");
       }
-    };
+    } catch (err) {
+      setError(err.message || "Đã xảy ra lỗi khi tải đơn hàng");
+      notifyError(err.message || "Đã xảy ra lỗi khi tải đơn hàng");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchUserOrders();
   }, [id]);
 
@@ -80,7 +80,7 @@ const CustomerOrder = () => {
                 </TableCell>
               </tr>
             </TableHeader>
-            <CustomerOrderTable orders={orderData} />
+            <CustomerOrderTable orders={orderData} fetchOrders={fetchUserOrders} />
           </Table>
         </TableContainer>
       ) : null}

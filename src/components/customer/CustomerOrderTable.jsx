@@ -13,7 +13,7 @@ import { notifySuccess, notifyError } from "@/utils/toast";
 // import Status from '../table/Status';
 // import SelectStatus from '../form/SelectStatus';
 
-const CustomerOrderTable = ({ orders }) => {
+const CustomerOrderTable = ({ orders, fetchOrders }) => {
   const { t } = useTranslation();
   const { getNumberTwo } = useUtilsFunction();
   const { setIsUpdate } = useContext(SidebarContext);
@@ -39,6 +39,11 @@ const CustomerOrderTable = ({ orders }) => {
       await OrderServices.updateOrderStatus(orderId, statusCode);
       notifySuccess("Cập nhật trạng thái đơn hàng thành công!");
       setIsUpdate(true);
+      
+      // Refresh orders data to show the updated status immediately
+      if (fetchOrders) {
+        fetchOrders();
+      }
     } catch (err) {
       notifyError(err?.response?.data?.message || err?.message || "Không thể cập nhật trạng thái đơn hàng");
     }
