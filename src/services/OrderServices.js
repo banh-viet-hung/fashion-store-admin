@@ -50,12 +50,20 @@ const OrderServices = {
     return requests.get(`/orders/customer/${id}`, body);
   },
 
+  getUserOrders: async (userId) => {
+    return requests.get(`/orders/user/${userId}`);
+  },
+
   getOrderById: async (id, body) => {
     return requests.get(`/orders/${id}`, body);
   },
 
   updateOrder: async (id, body, headers) => {
     return requests.put(`/orders/${id}`, body, headers);
+  },
+
+  updateOrderStatus: async (id, statusCode) => {
+    return requests.post(`/orders/${id}/update-status?statusCode=${statusCode}`);
   },
 
   deleteOrder: async (id) => {
@@ -88,6 +96,10 @@ const OrderServices = {
 
   getBestSellerProductChart: async () => {
     return requests.get("/orders/best-seller/chart");
+  },
+
+  getOrderStatus: async () => {
+    return requests.get("/orderStatus");
   },
 
   //for sending email invoice to customer

@@ -226,7 +226,6 @@ const Products = () => {
                 <TableCell>Giá khuyến mãi</TableCell>
                 <TableCell>{t("Số lượng")}</TableCell>
                 <TableCell>{t("Trạng thái")}</TableCell>
-                <TableCell className="text-center">{t("View")}</TableCell>
                 <TableCell className="text-right">{t("Hành động")}</TableCell>
               </tr>
             </TableHeader>
