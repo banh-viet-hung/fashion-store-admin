@@ -31,8 +31,8 @@ const CategoryTable = ({ data, lang, isCheck, categories, setIsCheck }) => {
 
       <TableBody>
         {categories?.map((category, index) => (
-          <TableRow key={category.id}>
-            <TableCell>
+          <TableRow key={category.id} className="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-150">
+            <TableCell className="pl-4 py-3">
               <CheckBox
                 type="checkbox"
                 name="category"
@@ -41,14 +41,16 @@ const CategoryTable = ({ data, lang, isCheck, categories, setIsCheck }) => {
                 isChecked={isCheck?.includes(String(category.id))}
               />
             </TableCell>
-            <TableCell className="font-semibold uppercase text-xs">
+            <TableCell className="text-xs font-medium text-gray-700 dark:text-gray-300">
               {index + 1}
             </TableCell>
-            <TableCell className="font-medium text-sm">
+            <TableCell className="text-sm font-medium text-gray-800 dark:text-gray-100">
               {category.name}
             </TableCell>
-            <TableCell className="text-sm">{category.slug}</TableCell>
-            <TableCell>
+            <TableCell className="text-sm text-gray-600 dark:text-gray-400">
+              {category.slug}
+            </TableCell>
+            <TableCell className="text-right pr-4">
               <EditDeleteButton
                 id={category.id}
                 title={category.name}

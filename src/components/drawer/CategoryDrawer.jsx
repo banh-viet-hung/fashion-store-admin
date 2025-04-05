@@ -2,6 +2,7 @@ import { Input } from "@windmill/react-ui";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Scrollbars from "react-custom-scrollbars-2";
+import { FiBox, FiLink } from "react-icons/fi";
 
 //internal import
 import Error from "@/components/form/others/Error";
@@ -61,19 +62,24 @@ const CategoryDrawer = ({ id, data }) => {
       </div>
 
       <Scrollbars className="w-full md:w-7/12 lg:w-8/12 xl:w-8/12 relative dark:bg-gray-700 dark:text-gray-200">
-        <form onSubmit={handleSubmit(onSubmitWrapper)}>
-          <div className="p-6 flex-grow scrollbar-hide w-full max-h-full pb-40">
+        <form onSubmit={handleSubmit(onSubmitWrapper)} className="block">
+          <div className="px-6 pt-8 flex-grow scrollbar-hide w-full max-h-full pb-40">
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
               <LabelArea label={t("Tên danh mục")} />
               <div className="col-span-8 sm:col-span-4">
-                <Input
-                  required={true}
-                  value={name}
-                  onChange={handleNameChange}
-                  type="text"
-                  placeholder={t("Vd: Quần nam")}
-                  className="border h-12 text-sm focus:outline-none block w-full bg-gray-100 dark:bg-white border-transparent focus:bg-white"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FiBox className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <Input
+                    required={true}
+                    value={name}
+                    onChange={handleNameChange}
+                    type="text"
+                    placeholder={t("Vd: Quần nam")}
+                    className="pl-10 border h-12 text-sm focus:outline-none block w-full bg-gray-100 dark:bg-white dark:text-gray-800 border-transparent focus:bg-white focus:border-emerald-500 focus:ring-0"
+                  />
+                </div>
                 <Error errorName={errors.name} />
               </div>
             </div>
@@ -81,13 +87,18 @@ const CategoryDrawer = ({ id, data }) => {
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
               <LabelArea label={t("Slug")} />
               <div className="col-span-8 sm:col-span-4">
-                <Input
-                  value={slug}
-                  onChange={handleSlugChange}
-                  type="text"
-                  placeholder={t("Vd: quan-nam")}
-                  className="border h-12 text-sm focus:outline-none block w-full bg-gray-100 dark:bg-white border-transparent focus:bg-white"
-                />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <FiLink className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <Input
+                    value={slug}
+                    onChange={handleSlugChange}
+                    type="text"
+                    placeholder={t("Vd: quan-nam")}
+                    className="pl-10 border h-12 text-sm focus:outline-none block w-full bg-gray-100 dark:bg-white dark:text-gray-800 border-transparent focus:bg-white focus:border-emerald-500 focus:ring-0"
+                  />
+                </div>
                 <Error errorName={errors.slug} />
               </div>
             </div>
