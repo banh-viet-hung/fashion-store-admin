@@ -1,7 +1,7 @@
-import { TableBody, TableCell, TableRow } from "@windmill/react-ui";
+import { TableBody, TableCell, TableRow, Badge } from "@windmill/react-ui";
 
 import { useTranslation } from "react-i18next";
-import { FiZoomIn } from "react-icons/fi";
+import { FiZoomIn, FiEye } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { useContext } from "react";
 
@@ -46,55 +46,98 @@ const OrderTable = ({ orders, fetchOrders }) => {
     }
   };
 
+  // Get badge type based on status
+  const getBadgeType = (status) => {
+    if (!status) return "neutral";
+    
+    switch(status.toLowerCase()) {
+      case "đã giao":
+      case "delivered": 
+        return "success";
+      case "đã hủy":
+      case "cancelled": 
+        return "danger";
+      case "đã thanh toán":
+      case "paid": 
+        return "primary";
+      case "chờ giao hàng":
+      case "out_for_delivery": 
+        return "warning";
+      case "chờ xác nhận":
+      case "pending": 
+        return "neutral";
+      default: 
+        return "neutral";
+    }
+  };
+
   return (
     <>
       <TableBody className="dark:bg-gray-900">
         {orders?.map((order, i) => (
-          <TableRow key={i + 1}>
-            <TableCell>
-              <span className="font-semibold uppercase text-xs">
+          <TableRow 
+            key={i + 1}
+            className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <TableCell className="pl-4">
+              <span className="font-medium text-gray-700 dark:text-gray-300 text-sm">
                 #{order?.invoice}
               </span>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">
-                {formatDateTimeVN(order?.updatedDate)}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {formatDateTimeVN(order?.updatedDate).split(',')[0]}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatDateTimeVN(order?.updatedDate).split(',')[1]}
+                </span>
+              </div>
             </TableCell>
 
-            <TableCell>
-              <span className="text-sm font-semibold">
+            <TableCell className="text-right">
+              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                 {formatCurrencyVN(order?.total)}
               </span>
             </TableCell>
 
-            <TableCell className="text-xs">
-              <Status status={order?.status} />
+            <TableCell className="text-center">
+              <Badge 
+                type={getBadgeType(order?.status)}
+                className="px-3 py-1 w-28 justify-center"
+              >
+                <span className="truncate text-xs">
+                  {order?.status || "Chờ xác nhận"}
+                </span>
+              </Badge>
             </TableCell>
 
             <TableCell className="text-center">
-              <OrderStatusSelect 
-                orderId={order._id} 
-                currentStatus={order.status}
-                onStatusUpdate={handleStatusUpdate}
-              />
+              <div className="flex justify-center">
+                <OrderStatusSelect 
+                  orderId={order._id} 
+                  currentStatus={order.status}
+                  onStatusUpdate={handleStatusUpdate}
+                />
+              </div>
             </TableCell>
 
-            <TableCell className="text-right flex justify-end">
-              <div className="flex justify-between items-center">
+            <TableCell className="text-right pr-4">
+              <div className="flex justify-end items-center space-x-1">
                 <PrintReceipt orderId={order._id} />
 
-                <span className="p-2 cursor-pointer text-gray-400 hover:text-emerald-600">
-                  <Link to={`/order/${order._id}`}>
-                    <Tooltip
-                      id="view"
-                      Icon={FiZoomIn}
-                      title={t("Xem chi tiết")}
-                      bgColor="#059669"
-                    />
-                  </Link>
-                </span>
+                <Link 
+                  to={`/order/${order._id}`}
+                  className="p-2 text-gray-400 hover:text-emerald-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <Tooltip
+                    id="view"
+                    Icon={FiEye}
+                    title={t("Xem chi tiết")}
+                    bgColor="#059669"
+                  />
+                </Link>
               </div>
             </TableCell>
           </TableRow>

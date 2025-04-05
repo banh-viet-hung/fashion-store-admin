@@ -11,9 +11,11 @@ import {
   TableContainer,
   TableFooter,
   TableHeader,
+  Badge,
 } from "@windmill/react-ui";
 import { useContext, useState, useEffect } from "react";
-import { IoCloudDownloadOutline } from "react-icons/io5";
+import { IoCloudDownloadOutline, IoFilterOutline, IoSearch, IoClose } from "react-icons/io5";
+import { FiCalendar, FiFilter, FiRefreshCw, FiTruck, FiCreditCard, FiList, FiInfo } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 import exportFromJSON from "export-from-json";
 
@@ -49,6 +51,7 @@ const Orders = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [shippingMethods, setShippingMethods] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     orderId: '',
     orderStatusCode: '',
@@ -221,151 +224,318 @@ const Orders = () => {
     setIsUpdate(true); // Buộc useAsync gọi lại API
   };
 
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+
+  // Calculate active filters count
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.orderId) count++;
+    if (filters.orderStatusCode) count++;
+    if (filters.paymentMethodCode) count++;
+    if (filters.shippingMethodCode) count++;
+    if (filters.startDate) count++;
+    if (filters.endDate) count++;
+    return count;
+  };
+
+  // Generate filter summary text
+  const getFilterSummary = () => {
+    const summaries = [];
+    
+    if (filters.orderId) summaries.push(`Mã đơn: ${filters.orderId}`);
+    
+    if (filters.orderStatusCode) {
+      const status = orderStatuses.find(s => s.description === filters.orderStatusCode);
+      if (status) summaries.push(`Trạng thái: ${status.statusName}`);
+    }
+    
+    if (filters.paymentMethodCode) {
+      const method = paymentMethods.find(m => m.code === filters.paymentMethodCode);
+      if (method) summaries.push(`Thanh toán: ${method.name}`);
+    }
+    
+    if (filters.shippingMethodCode) {
+      const method = shippingMethods.find(m => m.code === filters.shippingMethodCode);
+      if (method) summaries.push(`Vận chuyển: ${method.name}`);
+    }
+    
+    if (filters.startDate && filters.endDate) {
+      const formattedStart = filters.startDate.toLocaleDateString('vi-VN');
+      const formattedEnd = filters.endDate.toLocaleDateString('vi-VN');
+      summaries.push(`Từ ${formattedStart} đến ${formattedEnd}`);
+    } else if (filters.startDate) {
+      const formattedStart = filters.startDate.toLocaleDateString('vi-VN');
+      summaries.push(`Từ ${formattedStart}`);
+    } else if (filters.endDate) {
+      const formattedEnd = filters.endDate.toLocaleDateString('vi-VN');
+      summaries.push(`Đến ${formattedEnd}`);
+    }
+    
+    return summaries;
+  };
+
   return (
     <>
-      <PageTitle>{t("Quản lý đơn hàng")}</PageTitle>
+      <div className="flex justify-between items-center mb-4">
+        <PageTitle>{t("Quản lý đơn hàng")}</PageTitle>
+        <div className="flex items-center gap-2">
+          <Button 
+            layout="outline" 
+            size="small"
+            className="flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600"
+            onClick={toggleFilters}
+          >
+            <FiFilter className="h-4 w-4" />
+            <span className="hidden md:inline-block">Lọc</span>
+            {getActiveFiltersCount() > 0 && (
+              <Badge type="danger" className="ml-1 px-1.5 py-0.5">
+                {getActiveFiltersCount()}
+              </Badge>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Active filter summary */}
+      {getActiveFiltersCount() > 0 && (
+        <div className="mb-4">
+          <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiInfo className="text-blue-500 mr-2" />
+                <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Lọc hiện tại:</span>
+              </div>
+              <Button
+                layout="link"
+                size="small" 
+                className="text-blue-600 text-xs hover:text-blue-800"
+                onClick={handleResetField}
+              >
+                Xóa tất cả
+              </Button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {getFilterSummary().map((summary, index) => (
+                <Badge key={index} type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
+                  {summary}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <AnimatedContent>
-        <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
-          <CardBody>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4 lg:gap-4 xl:gap-6 md:gap-2 md:grid-cols-5 py-2">
-                <div>
-                  <Input
-                    ref={searchRef}
-                    type="search"
-                    name="search"
-                    placeholder="Nhập mã đơn hàng"
-                    value={filters.orderId}
-                    onChange={(e) => handleFilterChange('orderId', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Select
-                    value={filters.orderStatusCode}
-                    onChange={(e) => handleFilterChange('orderStatusCode', e.target.value)}
-                  >
-                    <option value="" defaultValue>
-                      {t("Trạng thái đơn hàng")}
-                    </option>
-                    {orderStatuses.map((status) => (
-                      <option key={status.description} value={status.description}>
-                        {status.statusName}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <Select
-                    value={filters.shippingMethodCode}
-                    onChange={(e) => handleFilterChange('shippingMethodCode', e.target.value)}
-                  >
-                    <option value="" defaultValue>
-                      {t("Phương thức vận chuyển")}
-                    </option>
-                    {shippingMethods.map((method) => (
-                      <option key={method.code} value={method.code}>
-                        {method.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-                <div>
-                  <Select
-                    value={filters.paymentMethodCode}
-                    onChange={(e) => handleFilterChange('paymentMethodCode', e.target.value)}
-                  >
-                    <option value="" defaultValue>
-                      {t("Phương thức thanh toán")}
-                    </option>
-                    {paymentMethods.map((method) => (
-                      <option key={method.code} value={method.code}>
-                        {method.name}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-4 lg:gap-6 xl:gap-6 lg:grid-cols-3 xl:grid-cols-3 md:grid-cols-3 sm:grid-cols-1 py-2">
-                <div>
-                  <Label>Ngày bắt đầu</Label>
-                  <Input
-                    type="date"
-                    name="startDate"
-                    onChange={(e) => handleDateChange('startDate', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label>Ngày kết thúc</Label>
-                  <Input
-                    type="date"
-                    name="endDate"
-                    onChange={(e) => handleDateChange('endDate', e.target.value)}
-                  />
-                </div>
-                <div className="mt-2 md:mt-0 flex items-center xl:gap-x-4 gap-x-1 flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
-                  <div className="w-full mx-1">
-                    <Label style={{ visibility: "hidden" }}>Filter</Label>
-                    <Button
-                      type="submit"
-                      className="h-12 w-full bg-emerald-700"
-                    >
-                      Áp dụng
-                    </Button>
+        <div className={`transition-all duration-300 overflow-hidden ${showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <Card className="min-w-0 shadow-sm bg-white dark:bg-gray-800 mb-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                <FiFilter className="mr-2 h-4 w-4 text-emerald-500" />
+                Lọc đơn hàng
+              </h3>
+              <Button
+                layout="link"
+                size="small"
+                className="text-gray-500 hover:text-gray-700"
+                onClick={toggleFilters}
+              >
+                <IoClose className="h-5 w-5" />
+              </Button>
+            </div>
+            <CardBody className="p-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  {/* Cột 1: Thông tin đơn hàng & Trạng thái */}
+                  <div className="md:col-span-4 space-y-3">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <IoSearch className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <Input
+                        ref={searchRef}
+                        type="search"
+                        name="search"
+                        placeholder="Tìm theo mã đơn hàng"
+                        value={filters.orderId}
+                        onChange={(e) => handleFilterChange('orderId', e.target.value)}
+                        className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <FiList className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <Select
+                        value={filters.orderStatusCode}
+                        onChange={(e) => handleFilterChange('orderStatusCode', e.target.value)}
+                        className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                      >
+                        <option value="" defaultValue>
+                          Tất cả trạng thái
+                        </option>
+                        {orderStatuses.map((status) => (
+                          <option key={status.description} value={status.description}>
+                            {status.statusName}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
                   </div>
-
-                  <div className="w-full">
-                    <Label style={{ visibility: "hidden" }}>Reset</Label>
-                    <Button
-                      layout="outline"
-                      onClick={handleResetField}
-                      type="reset"
-                      className="px-4 md:py-1 py-3 text-sm dark:bg-gray-700"
-                    >
-                      <span className="text-black dark:text-gray-200">
-                        Hoàn tác
-                      </span>
-                    </Button>
+                  
+                  {/* Cột 2: Phương thức */}
+                  <div className="md:col-span-4 space-y-3">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <FiTruck className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <Select
+                        value={filters.shippingMethodCode}
+                        onChange={(e) => handleFilterChange('shippingMethodCode', e.target.value)}
+                        className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                      >
+                        <option value="" defaultValue>
+                          Tất cả phương thức vận chuyển
+                        </option>
+                        {shippingMethods.map((method) => (
+                          <option key={method.code} value={method.code}>
+                            {method.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <FiCreditCard className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <Select
+                        value={filters.paymentMethodCode}
+                        onChange={(e) => handleFilterChange('paymentMethodCode', e.target.value)}
+                        className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                      >
+                        <option value="" defaultValue>
+                          Tất cả phương thức thanh toán
+                        </option>
+                        {paymentMethods.map((method) => (
+                          <option key={method.code} value={method.code}>
+                            {method.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {/* Cột 3: Thời gian */}
+                  <div className="md:col-span-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <FiCalendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <Input
+                          type="date"
+                          name="startDate"
+                          placeholder="Từ ngày"
+                          onChange={(e) => handleDateChange('startDate', e.target.value)}
+                          className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                        />
+                      </div>
+                      
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                          <FiCalendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        </div>
+                        <Input
+                          type="date"
+                          name="endDate"
+                          placeholder="Đến ngày"
+                          onChange={(e) => handleDateChange('endDate', e.target.value)}
+                          className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        layout="outline"
+                        onClick={handleResetField}
+                        type="reset"
+                        className="h-10 border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2 transition-all duration-200 px-3"
+                      >
+                        <FiRefreshCw className="h-4 w-4" />
+                        <span className="text-sm">Đặt lại</span>
+                      </Button>
+                      
+                      <Button
+                        type="submit"
+                        className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-3"
+                      >
+                        <IoFilterOutline className="h-4 w-4" />
+                        <span className="text-sm">Áp dụng</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
+              </form>
+            </CardBody>
+          </Card>
+        </div>
       </AnimatedContent>
 
       {loading ? (
-        <TableLoading row={12} col={7} width={160} height={20} />
+        <div className="animate-pulse">
+          <TableLoading row={12} col={7} width={160} height={20} />
+        </div>
       ) : orders.length !== 0 ? (
-        <TableContainer className="mb-8 dark:bg-gray-900">
-          <Table>
-            <TableHeader>
-              <tr>
-                <TableCell>{t("Mã đơn hàng")}</TableCell>
-                <TableCell>{t("Ngày đặt")}</TableCell>
-                <TableCell>{t("Tổng tiền")}</TableCell>
-                <TableCell>{t("Trạng thái đơn hàng")}</TableCell>
-                <TableCell>{t("Thao tác")}</TableCell>
-                <TableCell className="text-right">{t("InvoiceTbl")}</TableCell>
-              </tr>
-            </TableHeader>
+        <Card className="shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <CardBody className="p-0">
+            <TableContainer className="mb-0">
+              <Table>
+                <TableHeader>
+                  <tr className="bg-gray-50 dark:bg-gray-800">
+                    <TableCell className="font-semibold text-xs uppercase pl-4">
+                      {t("Mã đơn hàng")}
+                    </TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">
+                      {t("Ngày đặt")}
+                    </TableCell>
+                    <TableCell className="font-semibold text-xs uppercase text-right">
+                      {t("Tổng tiền")}
+                    </TableCell>
+                    <TableCell className="font-semibold text-xs uppercase text-center">
+                      {t("Trạng thái đơn hàng")}
+                    </TableCell>
+                    <TableCell className="font-semibold text-xs uppercase text-center">
+                      {t("Thao tác")}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-xs uppercase pr-4">
+                      {t("InvoiceTbl")}
+                    </TableCell>
+                  </tr>
+                </TableHeader>
 
-            <OrderTable orders={orders} fetchOrders={() => setIsUpdate(true)} />
-          </Table>
+                <OrderTable orders={orders} fetchOrders={() => setIsUpdate(true)} />
+              </Table>
 
-          <TableFooter>
-            <Pagination
-              totalResults={pagination.totalElements}
-              resultsPerPage={pagination.size}
-              onChange={handleOrderPageChange}
-              label="Table navigation"
-            />
-          </TableFooter>
-        </TableContainer>
+              <TableFooter>
+                <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Hiển thị {orders.length} trên {pagination.totalElements} đơn hàng
+                  </div>
+                  <Pagination
+                    totalResults={pagination.totalElements}
+                    resultsPerPage={pagination.size}
+                    onChange={handleOrderPageChange}
+                    label="Table navigation"
+                  />
+                </div>
+              </TableFooter>
+            </TableContainer>
+          </CardBody>
+        </Card>
       ) : (
         <NotFound title="Không tìm thấy đơn hàng nào." />
       )}

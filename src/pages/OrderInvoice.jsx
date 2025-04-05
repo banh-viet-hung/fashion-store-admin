@@ -3,13 +3,17 @@ import ReactToPrint from "react-to-print";
 import React, { useContext, useRef, useState } from "react";
 import { FiPrinter, FiMail } from "react-icons/fi";
 import { IoCloudDownloadOutline } from "react-icons/io5";
-import { Button } from "@windmill/react-ui";
+import { Button, Badge } from "@windmill/react-ui";
 import {
   TableCell,
   TableHeader,
   Table,
   TableContainer,
   WindmillContext,
+  TableBody,
+  TableRow,
+  Card,
+  CardBody,
 } from "@windmill/react-ui";
 import { useTranslation } from "react-i18next";
 import { PDFDownloadLink } from "@react-pdf/renderer";
@@ -46,22 +50,35 @@ const OrderInvoice = () => {
 
   const { handleErrorNotification } = useError();
   const { handleDisableForDemo } = useDisableForDemo();
+  const { currency, globalSetting, showDateFormat, getNumberTwo } = useUtilsFunction();
 
-  // console.log("data", data);
+  // Format ngày giờ theo định dạng Việt Nam
+  const formatDateTimeVN = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  const { currency, globalSetting, showDateFormat, getNumberTwo } =
-    useUtilsFunction();
+  // Format số tiền theo định dạng Việt Nam
+  const formatCurrencyVN = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
 
   const handleEmailInvoice = async (inv) => {
-    // console.log("inv", inv);
     if (handleDisableForDemo()) {
-      return; // Exit the function if the feature is disabled
+      return;
     }
 
-    // if (adminInfo?.role !== "Super Admin")
-    //   return notifyError(
-    //     "You don't have permission to sent email of this order!"
-    //   );
     setIsSubmitting(true);
     try {
       const updatedData = {
@@ -78,9 +95,7 @@ const OrderInvoice = () => {
           from_email: globalSetting?.from_email,
         },
       };
-      // console.log("updatedData", updatedData);
 
-      // return setIsSubmitting(false);
       const res = await OrderServices.sendEmailInvoiceToCustomer(updatedData);
       notifySuccess(res.message);
       setIsSubmitting(false);
@@ -90,228 +105,378 @@ const OrderInvoice = () => {
     }
   };
 
+  // Get current active status
+  const getCurrentStatus = (orderStatusDetails) => {
+    if (!orderStatusDetails || orderStatusDetails.length === 0) return null;
+    
+    // Sort by date (newest first)
+    const sortedStatuses = [...orderStatusDetails].sort((a, b) => 
+      new Date(b.updateAt) - new Date(a.updateAt)
+    );
+    
+    return sortedStatuses[0];
+  };
+
+  const currentStatus = data?.data?.orderStatusDetails ? 
+    getCurrentStatus(data.data.orderStatusDetails) : null;
+
+  // Status color mapping
+  const getStatusColor = (status) => {
+    if (!status) return "warning";
+    
+    switch(status.description) {
+      case "DELIVERED": return "success";
+      case "CANCELLED": return "danger";
+      case "PAID": return "primary";
+      case "OUT_FOR_DELIVERY": return "warning";
+      case "PENDING": return "neutral";
+      default: return "warning";
+    }
+  };
+
+  // Prepare document data for PDF
+  const prepareDocumentData = () => {
+    return {
+      invoice: id,
+      createdAt: currentStatus?.updateAt,
+      user_info: {
+        name: data?.data?.shippingAddress?.fullName,
+        contact: data?.data?.shippingAddress?.phoneNumber,
+        address: data?.data?.shippingAddress?.address,
+        city: data?.data?.shippingAddress?.city,
+        country: "Việt Nam",
+        zipCode: ""
+      },
+      status: currentStatus?.statusName || "Chờ xác nhận",
+      items: data?.data?.items?.map(item => ({
+        itemName: `Sản phẩm #${item.productId}`,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color
+      })),
+      subTotal: data?.data?.priceDetails?.subTotal,
+      shippingCost: data?.data?.priceDetails?.shipping,
+      discount: data?.data?.priceDetails?.discount,
+      total: data?.data?.priceDetails?.total,
+      paymentMethod: data?.data?.paymentMethod?.name
+    };
+  };
+
   return (
     <>
-      <PageTitle> {t("InvoicePageTittle")} </PageTitle>
+      <PageTitle> Chi tiết đơn hàng #{id} </PageTitle>
 
-      <div
-        ref={printRef}
-        className="bg-white dark:bg-gray-800 mb-4 p-6 lg:p-8 rounded-xl shadow-sm overflow-hidden"
-      >
-        {!loading && (
-          <div className="">
-            <div className="flex lg:flex-row md:flex-row flex-col lg:items-center justify-between pb-4 border-b border-gray-50 dark:border-gray-700 dark:text-gray-300">
-              <h1 className="font-bold font-serif text-xl uppercase">
-                {t("InvoicePageTittle")}
-                <p className="text-xs mt-1 text-gray-500">
-                  {t("InvoiceStatus")}
-                  <span className="pl-2 font-medium text-xs capitalize">
-                    {" "}
-                    <Status status={data.status} />
-                  </span>
-                </p>
-              </h1>
-              <div className="lg:text-right text-left">
-                <h2 className="lg:flex lg:justify-end text-lg font-serif font-semibold mt-4 lg:mt-0 lg:ml-0 md:mt-0">
-                  {mode === "dark" ? (
-                    <img src={logoDark} alt="kachabazar" width="110" />
-                  ) : (
-                    <img src={logoLight} alt="kachabazar" width="110" />
+      {loading ? (
+        <Loading loading={loading} />
+      ) : error ? (
+        <span className="text-center mx-auto text-red-500">{error}</span>
+      ) : (
+        <div ref={printRef} className="space-y-6">
+          {/* Phần 1: Trạng thái và Tổng quan đơn hàng - Phần người dùng quan tâm đầu tiên */}
+          <Card className="mb-4 shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-emerald-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Trạng thái đơn hàng</h2>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Cập nhật: {formatDateTimeVN(currentStatus?.updateAt)}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <CardBody className="p-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    <Badge 
+                      type={getStatusColor(currentStatus)}
+                      className="text-md px-3 py-1"
+                    >
+                      {currentStatus?.statusName || "Chờ xác nhận"}
+                    </Badge>
+                    <span className="ml-3 text-sm text-gray-500">
+                      Cập nhật bởi: {currentStatus?.updatedBy || "Hệ thống"}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-end">
+                  <div className="flex gap-2">
+                    <ReactToPrint
+                      trigger={() => (
+                        <button className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600">
+                          <FiPrinter className="mr-1" />
+                          In
+                        </button>
+                      )}
+                      content={() => printRef.current}
+                      documentTitle={`Đơn hàng-${id}`}
+                    />
+                    
+                    <PDFDownloadLink
+                      document={
+                        <InvoiceForDownload
+                          t={t}
+                          data={prepareDocumentData()}
+                          currency={currency}
+                          getNumberTwo={getNumberTwo}
+                          showDateFormat={showDateFormat}
+                        />
+                      }
+                      fileName={`Hóa đơn-${id}`}
+                    >
+                      {({ blob, url, loading, error }) =>
+                        loading ? (
+                          "..."
+                        ) : (
+                          <button className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-teal-500 border border-transparent active:bg-teal-600 hover:bg-teal-600">
+                            <IoCloudDownloadOutline className="mr-1" />
+                            Tải xuống
+                          </button>
+                        )
+                      }
+                    </PDFDownloadLink>
+                    
+                    {globalSetting?.email_to_customer && (
+                      <button
+                        onClick={() => handleEmailInvoice(data)}
+                        disabled={isSubmitting}
+                        className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-blue-500 border border-transparent active:bg-blue-600 hover:bg-blue-600"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <img
+                              src={spinnerLoadingImage}
+                              alt="Loading"
+                              width={16}
+                              height={16}
+                              className="mr-1"
+                            />
+                            Đang gửi
+                          </>
+                        ) : (
+                          <>
+                            <FiMail className="mr-1" />
+                            Email
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mã đơn hàng</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-200">#{id}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Phương thức thanh toán</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-200">{data?.data?.paymentMethod?.name}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Phương thức vận chuyển</p>
+                  <p className="font-semibold text-gray-800 dark:text-gray-200">{data?.data?.shippingMethod?.name}</p>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Tổng tiền</p>
+                  <p className="font-semibold text-emerald-600">{formatCurrencyVN(data?.data?.priceDetails?.total || 0)}</p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Phần 2: Danh sách sản phẩm - Thông tin chính của đơn hàng */}
+          <Card className="shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Sản phẩm đã đặt</h2>
+            </div>
+            
+            <CardBody className="p-0">
+              <TableContainer>
+                <Table>
+                  <TableHeader>
+                    <tr>
+                      <TableCell>STT</TableCell>
+                      <TableCell>Sản phẩm</TableCell>
+                      <TableCell>Thuộc tính</TableCell>
+                      <TableCell className="text-center">Số lượng</TableCell>
+                      <TableCell className="text-right">Đơn giá</TableCell>
+                      <TableCell className="text-right">Thành tiền</TableCell>
+                    </tr>
+                  </TableHeader>
+                  <TableBody>
+                    {data?.data?.items?.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell className="font-medium">SP-{item.productId}</TableCell>
+                        <TableCell>
+                          {item.size && <span className="inline-block px-2 py-1 mr-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Size: {item.size}</span>}
+                          {item.color && <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Màu: {item.color}</span>}
+                        </TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right">{formatCurrencyVN(item.price)}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrencyVN(item.price * item.quantity)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardBody>
+          </Card>
+
+          {/* Phần 3: Tổng quan về thông tin thanh toán và giao hàng - Grid layout 2 cột */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 3.1: Thông tin giá trị đơn hàng */}
+            <Card className="shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+              <div className="bg-gradient-to-r from-yellow-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
+                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Thông tin thanh toán</h2>
+              </div>
+              
+              <CardBody>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-gray-600 dark:text-gray-400">Tạm tính:</span>
+                    <span className="font-medium">{formatCurrencyVN(data?.data?.priceDetails?.subTotal || 0)}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                    <span className="text-gray-600 dark:text-gray-400">Phí vận chuyển:</span>
+                    <span className="font-medium">{formatCurrencyVN(data?.data?.priceDetails?.shipping || 0)}</span>
+                  </div>
+                  {data?.data?.priceDetails?.discount > 0 && (
+                    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                      <span className="text-gray-600 dark:text-gray-400">Giảm giá:</span>
+                      <span className="font-medium text-red-500">-{formatCurrencyVN(data?.data?.priceDetails?.discount || 0)}</span>
+                    </div>
                   )}
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  {globalSetting?.address} <br />
-                  {globalSetting?.contact} <br />{" "}
-                  <span> {globalSetting?.email} </span> <br />
-                  {globalSetting?.website}
-                </p>
-              </div>
-            </div>
-            <div className="flex lg:flex-row md:flex-row flex-col justify-between pt-4">
-              <div className="mb-3 md:mb-0 lg:mb-0 flex flex-col">
-                <span className="font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoiceDate")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 block">
-                  {showDateFormat(data?.createdAt)}
-                </span>
-              </div>
-              <div className="mb-3 md:mb-0 lg:mb-0 flex flex-col">
-                <span className="font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoiceNo")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 block">
-                  #{data?.invoice}
-                </span>
-              </div>
-              <div className="flex flex-col lg:text-right text-left">
-                <span className="font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoiceTo")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 block">
-                  {data?.user_info?.name} <br />
-                  {data?.user_info?.email}{" "}
-                  <span className="ml-2">{data?.user_info?.contact}</span>
-                  <br />
-                  {data?.user_info?.address?.substring(0, 30)}
-                  <br />
-                  {data?.user_info?.city}, {data?.user_info?.country},{" "}
-                  {data?.user_info?.zipCode}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-        <div>
-          {loading ? (
-            <Loading loading={loading} />
-          ) : error ? (
-            <span className="text-center mx-auto text-red-500">{error}</span>
-          ) : (
-            <TableContainer className="my-8">
-              <Table>
-                <TableHeader>
-                  <tr>
-                    <TableCell>{t("Sr")}</TableCell>
-                    <TableCell>Product Title</TableCell>
-                    <TableCell className="text-center">
-                      {t("Quantity")}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {t("ItemPrice")}
-                    </TableCell>
-                    <TableCell className="text-right">{t("Amount")}</TableCell>
-                  </tr>
-                </TableHeader>
-                <Invoice
-                  data={data}
-                  currency={currency}
-                  getNumberTwo={getNumberTwo}
-                />
-              </Table>
-            </TableContainer>
-          )}
-        </div>
+                  <div className="flex justify-between py-3 font-semibold text-lg bg-gray-50 dark:bg-gray-700 p-2 rounded-lg">
+                    <span className="text-gray-700 dark:text-gray-300">Tổng cộng:</span>
+                    <span className="text-emerald-600">{formatCurrencyVN(data?.data?.priceDetails?.total || 0)}</span>
+                  </div>
+                </div>
 
-        {!loading && (
-          <div className="border rounded-xl border-gray-100 p-8 py-6 bg-gray-50 dark:bg-gray-900 dark:border-gray-800">
-            <div className="flex lg:flex-row md:flex-row flex-col justify-between">
-              <div className="mb-3 md:mb-0 lg:mb-0  flex flex-col sm:flex-wrap">
-                <span className="mb-1 font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoicepaymentMethod")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-semibold font-serif block">
-                  {data.paymentMethod}
-                </span>
-              </div>
-              <div className="mb-3 md:mb-0 lg:mb-0  flex flex-col sm:flex-wrap">
-                <span className="mb-1 font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("ShippingCost")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-semibold font-serif block">
-                  {currency}
-                  {getNumberTwo(data.shippingCost)}
-                </span>
-              </div>
-              <div className="mb-3 md:mb-0 lg:mb-0  flex flex-col sm:flex-wrap">
-                <span className="mb-1 font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoiceDicount")}
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400 font-semibold font-serif block">
-                  {currency}
-                  {getNumberTwo(data.discount)}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-wrap">
-                <span className="mb-1 font-bold font-serif text-sm uppercase text-gray-600 dark:text-gray-500 block">
-                  {t("InvoiceTotalAmount")}
-                </span>
-                <span className="text-xl font-serif font-bold text-red-500 dark:text-emerald-500 block">
-                  {currency}
-                  {getNumberTwo(data.total)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      {!loading && !error && (
-        <div className="mb-4 mt-3 flex md:flex-row flex-col items-center justify-between">
-          <PDFDownloadLink
-            document={
-              <InvoiceForDownload
-                t={t}
-                data={data}
-                currency={currency}
-                getNumberTwo={getNumberTwo}
-                showDateFormat={showDateFormat}
-              />
-            }
-            fileName="Invoice"
-          >
-            {({ blob, url, loading, error }) =>
-              loading ? (
-                "Loading..."
-              ) : (
-                <button className="flex items-center text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-5 py-2 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600  w-auto cursor-pointer">
-                  Download Invoice
-                  <span className="ml-2 text-base">
-                    <IoCloudDownloadOutline />
-                  </span>
-                </button>
-              )
-            }
-          </PDFDownloadLink>
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <h3 className="text-md font-medium text-gray-600 dark:text-gray-400 mb-2">Phương thức thanh toán</h3>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{data?.data?.paymentMethod?.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {data?.data?.paymentMethod?.description}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-md font-medium text-gray-600 dark:text-gray-400 mb-2">Phương thức vận chuyển</h3>
+                    <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                      <p className="font-medium text-gray-800 dark:text-gray-200">{data?.data?.shippingMethod?.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {data?.data?.shippingMethod?.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
 
-          <div className="flex md:mt-0 mt-3 gap-4 md:w-auto w-full">
-            {globalSetting?.email_to_customer && (
-              <div className="flex justify-end md:w-auto w-full">
-                {isSubmitting ? (
-                  <Button
-                    disabled={true}
-                    type="button"
-                    className="text-sm h-10 leading-4 inline-flex items-center cursor-pointer transition ease-in-out duration-300 font-semibold font-serif text-center justify-center border-0 border-transparent rounded-md focus-visible:outline-none focus:outline-none text-white px-2 ml-4 md:px-4 lg:px-6 py-4 md:py-3.5 lg:py-4 hover:text-white bg-emerald-400 hover:bg-emerald-500"
-                  >
-                    <img
-                      src={spinnerLoadingImage}
-                      alt="Loading"
-                      width={20}
-                      height={10}
-                    />{" "}
-                    <span className="font-serif ml-2 font-light">
-                      {" "}
-                      Processing
-                    </span>
-                  </Button>
-                ) : (
-                  <button
-                    onClick={() => handleEmailInvoice(data)}
-                    className="flex items-center text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-5 py-2 rounded-md text-white bg-teal-500 border border-transparent active:bg-teal-600 hover:bg-teal-600  md:w-auto w-full h-10 justify-center"
-                  >
-                    Email Invoice
-                    <span className="ml-2">
-                      <FiMail />
-                    </span>
-                  </button>
-                )}
+            {/* 3.2: Thông tin địa chỉ giao hàng */}
+            <Card className="shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+              <div className="bg-gradient-to-r from-purple-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
+                <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Địa chỉ giao hàng</h2>
               </div>
-            )}
-
-            <div className="md:w-auto w-full">
-              <ReactToPrint
-                trigger={() => (
-                  <button className="flex items-center text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-5 py-2 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600  md:w-auto w-full h-10 justify-center">
-                    {t("PrintInvoice")}{" "}
-                    <span className="ml-2">
-                      <FiPrinter />
-                    </span>
-                  </button>
-                )}
-                content={() => printRef.current}
-                documentTitle={data?.invoice}
-              />
-            </div>
+              
+              <CardBody>
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-full mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 dark:text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200">
+                        {data?.data?.shippingAddress?.fullName}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {data?.data?.shippingAddress?.phoneNumber}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="ml-2 pl-10 border-l-2 border-purple-200 dark:border-purple-700">
+                    <p className="text-gray-600 dark:text-gray-400 mb-1">
+                      {data?.data?.shippingAddress?.address}
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400 mb-1">
+                      {data?.data?.shippingAddress?.ward}, {data?.data?.shippingAddress?.district}
+                    </p>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {data?.data?.shippingAddress?.city}
+                    </p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
           </div>
+
+          {/* Phần 4: Lịch sử trạng thái đơn hàng - Timeline */}
+          <Card className="shadow-md overflow-hidden border border-gray-100 dark:border-gray-700">
+            <div className="bg-gradient-to-r from-indigo-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
+              <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Lịch sử trạng thái đơn hàng</h2>
+            </div>
+            
+            <CardBody>
+              <div className="relative">
+                {/* Timeline */}
+                <div className="absolute left-4 top-0 h-full border-l-2 border-gray-200 dark:border-gray-700"></div>
+                
+                <div className="space-y-6">
+                  {data?.data?.orderStatusDetails
+                    ?.sort((a, b) => new Date(b.updateAt) - new Date(a.updateAt))
+                    .map((status, index) => (
+                    <div key={index} className="flex items-start ml-2">
+                      <div className={`absolute -left-1 mt-1.5 rounded-full border-4 border-white dark:border-gray-800 h-10 w-10 flex items-center justify-center ${
+                        index === 0 
+                          ? 'bg-emerald-500 text-white' 
+                          : status.description === "CANCELLED"
+                            ? 'bg-red-400 text-white'
+                            : status.description === "DELIVERED"
+                              ? 'bg-green-400 text-white'
+                              : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {index === 0 && <span className="text-xs font-bold">Mới</span>}
+                      </div>
+                      <div className="ml-12">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+                            {status.statusName}
+                          </h3>
+                          <Badge type={
+                            status.description === "DELIVERED" ? "success" : 
+                            status.description === "CANCELLED" ? "danger" : 
+                            status.description === "PAID" ? "primary" :
+                            "warning"
+                          }>
+                            {status.description}
+                          </Badge>
+                        </div>
+                        <time className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          {formatDateTimeVN(status.updateAt)}
+                        </time>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Cập nhật bởi: {status.updatedBy}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardBody>
+          </Card>
         </div>
       )}
     </>
