@@ -1,6 +1,6 @@
-import { Avatar, TableBody, TableCell, TableRow } from "@windmill/react-ui";
+import { Avatar, TableBody, TableCell, TableRow, Badge } from "@windmill/react-ui";
 import React, { useState, useContext, useEffect } from "react";
-import { FiZoomIn } from "react-icons/fi";
+import { FiZoomIn, FiUser, FiEdit } from "react-icons/fi";
 import dayjs from "dayjs";
 
 // internal import
@@ -54,6 +54,20 @@ const StaffTable = ({ staffs, lang }) => {
     toggleDrawer();
   };
 
+  // Lấy badge type dựa trên role
+  const getRoleBadgeType = (roleName) => {
+    switch (roleName) {
+      case "ADMIN":
+        return "primary";
+      case "MANAGER":
+        return "success";
+      case "STAFF":
+        return "neutral";
+      default:
+        return "neutral";
+    }
+  };
+
   return (
     <>
       <DeleteModal id={serviceId} title={title} />
@@ -72,34 +86,34 @@ const StaffTable = ({ staffs, lang }) => {
         </MainDrawer>
       )}
 
-      <TableBody>
+      <TableBody className="dark:bg-gray-900">
         {staffs?.map((staff) => (
-          <TableRow key={staff.id}>
+          <TableRow key={staff.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <TableCell>
               <div className="flex items-center">
                 <Avatar
-                  className="hidden mr-3 md:block bg-gray-50"
-                  src={staff.avatar}
-                  alt="staff"
+                  className="hidden mr-3 md:block bg-gray-50 p-1 border border-gray-200 dark:border-gray-700"
+                  src={staff.avatar || "https://via.placeholder.com/40x40"}
+                  alt={staff.fullName}
                 />
                 <div>
-                  <h2 className="text-sm font-medium">{staff.fullName}</h2>
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">{staff.fullName}</h2>
                 </div>
               </div>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">{staff.email}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{staff.email}</span>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {staff.phoneNumber || "Chưa cập nhật"}
               </span>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {staff.dateOfBirth
                   ? dayjs(staff.dateOfBirth).format("DD/MM/YYYY")
                   : "Chưa cập nhật"}
@@ -107,31 +121,25 @@ const StaffTable = ({ staffs, lang }) => {
             </TableCell>
 
             <TableCell>
-              <span className="text-sm font-semibold">{staff.roleName}</span>
+              <Badge
+                type={getRoleBadgeType(staff.roleName)}
+                className="px-3 py-1 text-xs font-medium"
+              >
+                {staff.roleName}
+              </Badge>
             </TableCell>
 
-            <TableCell className="text-center text-xs">
-              <span
-                className={`px-2 py-1 rounded ${staff.active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                  }`}
+            <TableCell className="text-center">
+              <Badge
+                type={staff.active ? "success" : "danger"}
+                className="px-3 py-1 text-xs justify-center w-20"
               >
-                {staff.active ? 'Active' : 'Blocked'}
-              </span>
+                {staff.active ? 'Hoạt động' : 'Bị khóa'}
+              </Badge>
             </TableCell>
 
             <TableCell>
-              <div className="flex justify-between items-center">
-                <button
-                  onClick={() => handleAccessModalOpen(staff)}
-                  className="text-gray-400"
-                >
-                  <Tooltip
-                    id="view"
-                    Icon={FiZoomIn}
-                    title="View Access Route"
-                    bgColor="#059669"
-                  />
-                </button>
+              <div className="flex justify-end items-center space-x-1">
                 <StaffStatusButton 
                   id={staff.id} 
                   email={staff.email} 

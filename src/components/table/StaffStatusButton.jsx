@@ -55,20 +55,20 @@ const StaffStatusButton = ({ email, isActive, handleUpdate }) => {
       
       <button
         onClick={openModal}
-        className="p-2 cursor-pointer text-gray-400 hover:text-yellow-600 focus:outline-none"
+        className="p-2 text-gray-400 hover:text-orange-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
       >
         {isActive ? (
           <Tooltip
             id="block"
             Icon={MdLock}
-            title={t("Block")}
-            bgColor="#EF4444"
+            title="Khóa tài khoản"
+            bgColor="#f97316"
           />
         ) : (
           <Tooltip
             id="unlock"
             Icon={MdLockOpen}
-            title={t("Unlock")}
+            title="Mở khóa tài khoản"
             bgColor="#10B981"
           />
         )}
@@ -76,48 +76,58 @@ const StaffStatusButton = ({ email, isActive, handleUpdate }) => {
 
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         <ModalBody className="text-center custom-modal px-8 pt-6 pb-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-yellow-100 text-yellow-500">
+            {isActive ? (
+              <MdLock className="w-8 h-8" />
+            ) : (
+              <MdLockOpen className="w-8 h-8" />
+            )}
+          </div>
           <h2 className="text-xl font-medium mb-2">
             {isActive
-              ? t("Bạn muốn khóa tài khoản") 
-              : t("Bạn muốn mở khóa tài khoản")}{" "}
+              ? "Bạn muốn khóa tài khoản" 
+              : "Bạn muốn mở khóa tài khoản"}{" "}
             <span className="text-blue-500">{email}</span>?
           </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {isActive
+              ? "Tài khoản sẽ không thể đăng nhập vào hệ thống cho đến khi được mở khóa."
+              : "Tài khoản sẽ có thể đăng nhập và sử dụng hệ thống bình thường."}
+          </p>
         </ModalBody>
 
-        <ModalFooter className="justify-center">
+        <ModalFooter className="justify-end gap-2 px-6 py-3 border-t border-gray-100 dark:border-gray-700">
           <Button
-            className="w-full sm:w-auto hover:bg-white hover:border-gray-50"
+            className="h-10 bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
             layout="outline"
             onClick={closeModal}
           >
-            {t("Hủy thao tác")}
+            Hủy thao tác
           </Button>
-          <div className="flex justify-end">
-            {isSubmitting ? (
-              <Button
-                disabled={true}
-                type="button"
-                className="w-full h-12 sm:w-auto"
-              >
-                <img
-                  src={spinnerLoadingImage}
-                  alt="Loading"
-                  width={20}
-                  height={10}
-                />{" "}
-                <span className="font-serif ml-2 font-light">
-                  {t("Processing")}
-                </span>
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleChangeStatus} 
-                className={`w-full h-12 sm:w-auto ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-              >
-                {isActive ? t("Xác nhận khóa") : t("Xác nhận mở khóa")}
-              </Button>
-            )}
-          </div>
+          
+          {isSubmitting ? (
+            <Button
+              disabled={true}
+              type="button"
+              className="h-10 flex items-center justify-center"
+            >
+              <img
+                src={spinnerLoadingImage}
+                alt="Loading"
+                width={20}
+                height={20}
+                className="mr-2"
+              />
+              <span>Đang xử lý...</span>
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleChangeStatus} 
+              className={`h-10 ${isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            >
+              {isActive ? "Xác nhận khóa" : "Xác nhận mở khóa"}
+            </Button>
+          )}
         </ModalFooter>
       </Modal>
     </div>

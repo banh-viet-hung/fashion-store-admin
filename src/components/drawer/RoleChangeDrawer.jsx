@@ -13,7 +13,7 @@ import DrawerButton from "@/components/form/button/DrawerButton";
 const RoleChangeDrawer = ({ staff }) => {
   const { t } = useTranslation();
   const { email, roleName } = staff || {};
-  
+
   const {
     register,
     handleSubmit,
@@ -64,13 +64,14 @@ const RoleChangeDrawer = ({ staff }) => {
                         <option>{t("Đang tải...")}</option>
                       </Select>
                     ) : (
-                      <Select 
+                      <Select
                         className="border h-12 text-sm focus:outline-none block w-full bg-gray-100 dark:bg-white border-transparent focus:bg-white"
                         name="role"
                         {...register("role", {
                           required: "Quyền không được để trống",
                         })}
                       >
+                        <option value="">Quyền</option>
                         {roles
                           .filter(role => role.name !== "USER") // Loại bỏ quyền USER nếu cần
                           .map((role) => (

@@ -1,8 +1,8 @@
-import { TableBody, TableCell, TableRow } from "@windmill/react-ui";
+import { TableBody, TableCell, TableRow, Badge, Avatar } from "@windmill/react-ui";
 import dayjs from "dayjs";
 import { t } from "i18next";
 import React from "react";
-import { FiEdit, FiZoomIn } from "react-icons/fi";
+import { FiEdit, FiZoomIn, FiShoppingBag } from "react-icons/fi";
 import { Link } from "react-router-dom";
 
 // internal import
@@ -24,53 +24,62 @@ const CustomerTable = ({ customers }) => {
         <CustomerDrawer id={serviceId} />
       </MainDrawer>
 
-      <TableBody>
+      <TableBody className="dark:bg-gray-900">
         {customers?.map((user) => (
-          <TableRow key={user.id}>
+          <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <TableCell>
-              <span
-                className={`px-2 py-1 rounded text-xs ${user.active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                  }`}
+              <Badge
+                type={user.active ? "success" : "danger"}
+                className="px-3 py-1 text-xs font-medium"
               >
-                {user.active ? 'Active' : 'Blocked'}
-              </span>
+                {user.active ? 'Hoạt động' : 'Bị khóa'}
+              </Badge>
             </TableCell>
+            
             <TableCell>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {user.dateOfBirth
-                  ? dayjs(user.dateOfBirth).format("MMM D, YYYY")
+                  ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
                   : "Chưa cập nhật"}
               </span>
             </TableCell>
+            
             <TableCell>
-              <span className="text-sm">{user.fullName}</span>
+              <div className="flex items-center">
+                <Avatar
+                  className="hidden mr-3 md:block bg-gray-50 p-1 border border-gray-200 dark:border-gray-700"
+                  src={user.avatar || "https://via.placeholder.com/40x40"}
+                  alt={user.fullName}
+                />
+                <div>
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">{user.fullName}</h2>
+                </div>
+              </div>
             </TableCell>
+            
             <TableCell>
-              <span className="text-sm">{user.email}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{user.email}</span>
             </TableCell>
+            
             <TableCell>
-              <span className="text-sm font-medium">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {user.phoneNumber || "Chưa cập nhật"}
               </span>
             </TableCell>
+            
             <TableCell>
-              <div className="flex justify-end text-right">
+              <div className="flex justify-end items-center space-x-1">
                 <div className="p-2 cursor-pointer text-gray-400 hover:text-emerald-600">
                   <Link to={`/customer-order/${user.id}`}>
                     <Tooltip
                       id="view"
-                      Icon={FiZoomIn}
-                      title={t("ViewOrder")}
+                      Icon={FiShoppingBag}
+                      title={t("Xem đơn hàng")}
                       bgColor="#34D399"
                     />
                   </Link>
                 </div>
-                {/* <button
-                  onClick={() => handleUpdate(user.id)}
-                  className="p-2 cursor-pointer text-gray-400 hover:text-emerald-600 focus:outline-none"
-                >
-                  <Tooltip id="edit" Icon={FiEdit} title={t("Edit")} bgColor="#10B981" />
-                </button> */}
+                
                 <UserStatusButton email={user.email} isActive={user.active} />
               </div>
             </TableCell>

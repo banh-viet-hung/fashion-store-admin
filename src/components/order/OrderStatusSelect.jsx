@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Select, Button } from '@windmill/react-ui';
 import { FiSave } from 'react-icons/fi';
 import { BiLoaderAlt } from 'react-icons/bi';
@@ -8,16 +8,33 @@ import { notifyError, notifySuccess } from "@/utils/toast";
 
 const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
   const [loading, setLoading] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(currentStatus || '');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [orderStatuses, setOrderStatuses] = useState([]);
+  const [fetchingStatuses, setFetchingStatuses] = useState(true);
 
-  // Các trạng thái đơn hàng có thể chọn
-  const statuses = [
-    { value: 'PENDING', label: 'Chờ xác nhận' },
-    { value: 'PAID', label: 'Đã thanh toán' },
-    { value: 'OUT_FOR_DELIVERY', label: 'Chờ giao hàng' },
-    { value: 'DELIVERED', label: 'Đã giao' },
-    { value: 'CANCELLED', label: 'Đã hủy' }
-  ];
+  // Fetch order statuses from API
+  useEffect(() => {
+    const fetchOrderStatuses = async () => {
+      try {
+        setFetchingStatuses(true);
+        const response = await OrderServices.getOrderStatuses();
+        if (response && response._embedded && response._embedded.orderStatus) {
+          setOrderStatuses(response._embedded.orderStatus);
+        }
+      } catch (error) {
+        console.error("Error fetching order statuses:", error);
+      } finally {
+        setFetchingStatuses(false);
+      }
+    };
+
+    fetchOrderStatuses();
+  }, []);
+
+  // Cập nhật selectedStatus mỗi khi currentStatus thay đổi
+  useEffect(() => {
+    setSelectedStatus('');
+  }, [currentStatus]);
 
   // Xử lý khi thay đổi trạng thái
   const handleStatusChange = (e) => {
@@ -52,8 +69,8 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
   };
 
   // Xác định màu của option dựa trên giá trị trạng thái
-  const getStatusColor = (status) => {
-    switch(status) {
+  const getStatusColor = (description) => {
+    switch(description) {
       case 'DELIVERED':
         return 'text-green-600 font-medium';
       case 'CANCELLED':
@@ -68,7 +85,7 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
   };
 
   // Kiểm tra nếu trạng thái đã thay đổi so với ban đầu
-  const hasChanged = selectedStatus !== currentStatus && selectedStatus !== '';
+  const hasChanged = selectedStatus !== '' && selectedStatus !== currentStatus;
 
   return (
     <div className="flex items-center space-x-2">
@@ -77,17 +94,18 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
           value={selectedStatus}
           onChange={handleStatusChange}
           className="rounded-md border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 text-sm"
+          disabled={fetchingStatuses}
         >
           <option value="" disabled>
-            Chọn trạng thái
+            {fetchingStatuses ? "Đang tải..." : "Chọn trạng thái"}
           </option>
-          {statuses.map((status) => (
+          {orderStatuses.map((status) => (
             <option 
-              key={status.value} 
-              value={status.value}
-              className={getStatusColor(status.value)}
+              key={status.description} 
+              value={status.description}
+              className={getStatusColor(status.description)}
             >
-              {status.label}
+              {status.statusName}
             </option>
           ))}
         </Select>
@@ -95,10 +113,10 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
       
       <Button
         size="small"
-        disabled={!hasChanged || loading}
+        disabled={!hasChanged || loading || fetchingStatuses}
         onClick={handleSubmit}
         className={`rounded-md transition-all duration-200 ${
-          hasChanged 
+          hasChanged && !fetchingStatuses
             ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
             : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700'
         }`}

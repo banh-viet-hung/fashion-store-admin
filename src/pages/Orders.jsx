@@ -243,24 +243,24 @@ const Orders = () => {
   // Generate filter summary text
   const getFilterSummary = () => {
     const summaries = [];
-    
+
     if (filters.orderId) summaries.push(`Mã đơn: ${filters.orderId}`);
-    
+
     if (filters.orderStatusCode) {
       const status = orderStatuses.find(s => s.description === filters.orderStatusCode);
       if (status) summaries.push(`Trạng thái: ${status.statusName}`);
     }
-    
+
     if (filters.paymentMethodCode) {
       const method = paymentMethods.find(m => m.code === filters.paymentMethodCode);
       if (method) summaries.push(`Thanh toán: ${method.name}`);
     }
-    
+
     if (filters.shippingMethodCode) {
       const method = shippingMethods.find(m => m.code === filters.shippingMethodCode);
       if (method) summaries.push(`Vận chuyển: ${method.name}`);
     }
-    
+
     if (filters.startDate && filters.endDate) {
       const formattedStart = filters.startDate.toLocaleDateString('vi-VN');
       const formattedEnd = filters.endDate.toLocaleDateString('vi-VN');
@@ -272,7 +272,7 @@ const Orders = () => {
       const formattedEnd = filters.endDate.toLocaleDateString('vi-VN');
       summaries.push(`Đến ${formattedEnd}`);
     }
-    
+
     return summaries;
   };
 
@@ -281,8 +281,8 @@ const Orders = () => {
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý đơn hàng")}</PageTitle>
         <div className="flex items-center gap-2">
-          <Button 
-            layout="outline" 
+          <Button
+            layout="outline"
             size="small"
             className="flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600"
             onClick={toggleFilters}
@@ -309,7 +309,7 @@ const Orders = () => {
               </div>
               <Button
                 layout="link"
-                size="small" 
+                size="small"
                 className="text-blue-600 text-xs hover:text-blue-800"
                 onClick={handleResetField}
               >
@@ -363,7 +363,7 @@ const Orders = () => {
                         className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
                       />
                     </div>
-                    
+
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <FiList className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -384,7 +384,7 @@ const Orders = () => {
                       </Select>
                     </div>
                   </div>
-                  
+
                   {/* Cột 2: Phương thức */}
                   <div className="md:col-span-4 space-y-3">
                     <div className="relative">
@@ -406,7 +406,7 @@ const Orders = () => {
                         ))}
                       </Select>
                     </div>
-                    
+
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <FiCreditCard className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -427,7 +427,7 @@ const Orders = () => {
                       </Select>
                     </div>
                   </div>
-                  
+
                   {/* Cột 3: Thời gian */}
                   <div className="md:col-span-4 space-y-3">
                     <div className="grid grid-cols-2 gap-2">
@@ -443,7 +443,7 @@ const Orders = () => {
                           className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
                         />
                       </div>
-                      
+
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                           <FiCalendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -457,24 +457,23 @@ const Orders = () => {
                         />
                       </div>
                     </div>
-                    
-                    <div className="flex justify-end gap-2">
+
+                    <div className="flex justify-end gap-3 mt-2">
                       <Button
-                        layout="outline"
-                        onClick={handleResetField}
                         type="reset"
-                        className="h-10 border-gray-300 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2 transition-all duration-200 px-3"
+                        onClick={handleResetField}
+                        className="h-11 bg-red-300 hover:bg-red-400 dark:bg-red-700 dark:hover:bg-red-600 text-white dark:text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-5 w-32 justify-center shadow-sm hover:shadow-md font-medium border-0"
                       >
                         <FiRefreshCw className="h-4 w-4" />
-                        <span className="text-sm">Đặt lại</span>
+                        <span>Đặt lại</span>
                       </Button>
-                      
+
                       <Button
                         type="submit"
-                        className="h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-3"
+                        className="h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-5 w-32 justify-center shadow-sm hover:shadow font-medium border-0"
                       >
                         <IoFilterOutline className="h-4 w-4" />
-                        <span className="text-sm">Áp dụng</span>
+                        <span>Áp dụng</span>
                       </Button>
                     </div>
                   </div>
@@ -537,7 +536,7 @@ const Orders = () => {
           </CardBody>
         </Card>
       ) : (
-        <NotFound title="Không tìm thấy đơn hàng nào." />
+        <NotFound />
       )}
     </>
   );
