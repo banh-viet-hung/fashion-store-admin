@@ -38,6 +38,9 @@ const Orders = () => {
     searchRef,
     resultsPerPage,
     handleChangePage,
+    setCurrentPage,
+    setIsUpdate,
+    isUpdate,
   } = useContext(SidebarContext);
 
   const { t } = useTranslation();
@@ -46,14 +49,6 @@ const Orders = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [shippingMethods, setShippingMethods] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [orders, setOrders] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    size: 3,
-    totalPages: 0,
-    totalElements: 0
-  });
   const [filters, setFilters] = useState({
     orderId: '',
     orderStatusCode: '',
@@ -61,6 +56,11 @@ const Orders = () => {
     shippingMethodCode: '',
     startDate: null,
     endDate: null
+  });
+  const [pagination, setPagination] = useState({
+    size: 3,
+    totalPages: 0,
+    totalElements: 0
   });
 
   // Format date to MM/dd/yyyy
@@ -71,37 +71,48 @@ const Orders = () => {
     return `${month}/${day}/${year}`;
   };
 
-  // Fetch orders with current filters and pagination
-  const fetchOrders = async () => {
-    setLoading(true);
+  // Define async function for useAsync hook
+  const asyncFunction = async ({ cancelToken }) => {
     try {
-      // Chuyển đổi ngày thành định dạng MM/dd/yyyy
       const formattedFilters = {
         ...filters,
-        page: pagination.page,
+        page: currentPage,
         size: pagination.size,
         startDate: filters.startDate ? formatDate(filters.startDate) : undefined,
         endDate: filters.endDate ? formatDate(filters.endDate) : undefined
       };
 
       const response = await OrderServices.getAdminOrders(formattedFilters);
-      const adaptedOrders = adaptOrdersForTable(response.data.content);
-      setOrders(adaptedOrders);
+
+      // Update pagination information
       setPagination({
         ...pagination,
         totalPages: response.data.totalPages,
         totalElements: response.data.totalElements
       });
+
+      return response;
     } catch (error) {
       console.error('Error fetching orders:', error);
-      notifyError(error?.response?.data?.message || "Không thể tải danh sách đơn hàng");
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
+  // Use the useAsync hook for data fetching
+  const { data, loading, error } = useAsync(asyncFunction);
+
+  // Tìm tên phương thức thanh toán dựa trên mã
+  const findMethodNameByCode = (methods, code) => {
+    if (!code || !methods.length) return "";
+    const method = methods.find(m => m.code === code);
+    return method ? method.name : "";
+  };
+
+  // Process the orders data when available
+  const orders = data?.data?.content ? adaptOrdersForTable(data.data.content) : [];
+
   // Adapter để chuyển đổi dữ liệu từ API mới sang định dạng OrderTable
-  const adaptOrdersForTable = (apiOrders) => {
+  function adaptOrdersForTable(apiOrders) {
     return apiOrders.map(order => {
       // Tìm phương thức thanh toán từ danh sách
       let paymentMethodName = "";
@@ -125,18 +136,19 @@ const Orders = () => {
         originalData: order
       };
     });
-  };
+  }
 
-  // Tìm tên phương thức thanh toán dựa trên mã
-  const findMethodNameByCode = (methods, code) => {
-    if (!code || !methods.length) return "";
-    const method = methods.find(m => m.code === code);
-    return method ? method.name : "";
-  };
-
+  // Reset trạng thái khi vào trang Orders
   useEffect(() => {
-    fetchOrders();
-  }, [pagination.page, pagination.size]);
+    setCurrentPage(1); // Reset currentPage về 1
+    setIsUpdate(true); // Kích hoạt useAsync gọi lại API với trạng thái mới
+  }, [setCurrentPage, setIsUpdate]);
+
+  // Custom handler for page changes
+  const handleOrderPageChange = (p) => {
+    setCurrentPage(p);
+    setIsUpdate(true);
+  };
 
   useEffect(() => {
     const fetchMethods = async () => {
@@ -185,8 +197,8 @@ const Orders = () => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    setPagination(prev => ({ ...prev, page: 1 })); // Reset to first page
-    fetchOrders();
+    setCurrentPage(1); // Reset to first page
+    setIsUpdate(true); // Buộc useAsync gọi lại API
   };
 
   // Handle reset filters
@@ -205,13 +217,8 @@ const Orders = () => {
     }
 
     // Reset pagination to first page
-    setPagination(prev => ({
-      ...prev,
-      page: 1
-    }));
-
-    // Fetch orders with reset filters
-    fetchOrders();
+    setCurrentPage(1);
+    setIsUpdate(true); // Buộc useAsync gọi lại API
   };
 
   return (
@@ -347,14 +354,14 @@ const Orders = () => {
               </tr>
             </TableHeader>
 
-            <OrderTable orders={orders} fetchOrders={fetchOrders} />
+            <OrderTable orders={orders} fetchOrders={() => setIsUpdate(true)} />
           </Table>
 
           <TableFooter>
             <Pagination
               totalResults={pagination.totalElements}
               resultsPerPage={pagination.size}
-              onChange={(p) => setPagination(prev => ({ ...prev, page: p }))}
+              onChange={handleOrderPageChange}
               label="Table navigation"
             />
           </TableFooter>
