@@ -3,7 +3,7 @@ import { TableBody, TableCell, TableRow, Badge } from "@windmill/react-ui";
 import { useTranslation } from "react-i18next";
 import { FiZoomIn, FiEye } from "react-icons/fi";
 import { Link } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 
 //internal import
 import Status from "@/components/table/Status";
@@ -11,10 +11,32 @@ import Tooltip from "@/components/tooltip/Tooltip";
 import PrintReceipt from "@/components/form/others/PrintReceipt";
 import OrderStatusSelect from "@/components/order/OrderStatusSelect";
 import { SidebarContext } from "@/context/SidebarContext";
+import OrderServices from "@/services/OrderServices";
 
 const OrderTable = ({ orders, fetchOrders }) => {
   const { t } = useTranslation();
   const { setIsUpdate } = useContext(SidebarContext);
+  const [orderStatuses, setOrderStatuses] = useState([]);
+  const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
+
+  // Lấy danh sách trạng thái đơn hàng từ API
+  useEffect(() => {
+    const fetchOrderStatuses = async () => {
+      try {
+        setIsLoadingStatuses(true);
+        const response = await OrderServices.getOrderStatuses();
+        if (response && response._embedded && response._embedded.orderStatus) {
+          setOrderStatuses(response._embedded.orderStatus);
+        }
+      } catch (error) {
+        console.error("Error fetching order statuses:", error);
+      } finally {
+        setIsLoadingStatuses(false);
+      }
+    };
+
+    fetchOrderStatuses();
+  }, []);
 
   // Format ngày giờ theo định dạng Việt Nam
   const formatDateTimeVN = (dateString) => {
@@ -119,6 +141,7 @@ const OrderTable = ({ orders, fetchOrders }) => {
                   orderId={order._id} 
                   currentStatus={order.status}
                   onStatusUpdate={handleStatusUpdate}
+                  orderStatuses={orderStatuses}
                 />
               </div>
             </TableCell>

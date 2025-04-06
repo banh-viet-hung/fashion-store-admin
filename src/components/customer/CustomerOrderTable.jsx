@@ -18,16 +18,20 @@ const CustomerOrderTable = ({ orders, fetchOrders }) => {
   const { getNumberTwo } = useUtilsFunction();
   const { setIsUpdate } = useContext(SidebarContext);
   const [orderStatuses, setOrderStatuses] = useState([]);
+  const [isLoadingStatuses, setIsLoadingStatuses] = useState(true);
   
   useEffect(() => {
     const fetchOrderStatuses = async () => {
       try {
+        setIsLoadingStatuses(true);
         const response = await OrderServices.getOrderStatus();
         if (response?._embedded?.orderStatus) {
           setOrderStatuses(response._embedded.orderStatus);
         }
       } catch (err) {
         console.error("Error fetching order statuses:", err);
+      } finally {
+        setIsLoadingStatuses(false);
       }
     };
     
@@ -96,9 +100,10 @@ const CustomerOrderTable = ({ orders, fetchOrders }) => {
               <Select
                 onChange={(e) => handleChangeStatus(order.id, e.target.value)}
                 className="h-8"
+                disabled={isLoadingStatuses}
               >
                 <option value="status" defaultValue hidden>
-                  Thay đổi trạng thái
+                  {isLoadingStatuses ? "Đang tải..." : "Thay đổi trạng thái"}
                 </option>
                 {orderStatuses.map((status) => (
                   <option key={status.statusName} value={status.description}>

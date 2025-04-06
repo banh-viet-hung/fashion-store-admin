@@ -6,30 +6,10 @@ import { BiLoaderAlt } from 'react-icons/bi';
 import OrderServices from '@/services/OrderServices';
 import { notifyError, notifySuccess } from "@/utils/toast";
 
-const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate }) => {
+const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate, orderStatuses = [] }) => {
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [orderStatuses, setOrderStatuses] = useState([]);
-  const [fetchingStatuses, setFetchingStatuses] = useState(true);
-
-  // Fetch order statuses from API
-  useEffect(() => {
-    const fetchOrderStatuses = async () => {
-      try {
-        setFetchingStatuses(true);
-        const response = await OrderServices.getOrderStatuses();
-        if (response && response._embedded && response._embedded.orderStatus) {
-          setOrderStatuses(response._embedded.orderStatus);
-        }
-      } catch (error) {
-        console.error("Error fetching order statuses:", error);
-      } finally {
-        setFetchingStatuses(false);
-      }
-    };
-
-    fetchOrderStatuses();
-  }, []);
+  const [fetchingStatuses, setFetchingStatuses] = useState(false);
 
   // Cập nhật selectedStatus mỗi khi currentStatus thay đổi
   useEffect(() => {
