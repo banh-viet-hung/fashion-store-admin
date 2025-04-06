@@ -304,8 +304,7 @@ const OrderInvoice = () => {
                       <TableCell>Sản phẩm</TableCell>
                       <TableCell>Thuộc tính</TableCell>
                       <TableCell className="text-center">Số lượng</TableCell>
-                      <TableCell className="text-right">Đơn giá</TableCell>
-                      <TableCell className="text-right">Thành tiền</TableCell>
+                      <TableCell className="text-right">Tổng tiền</TableCell>
                     </tr>
                   </TableHeader>
                   <TableBody>
@@ -319,7 +318,6 @@ const OrderInvoice = () => {
                         </TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
                         <TableCell className="text-right">{formatCurrencyVN(item.price)}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatCurrencyVN(item.price * item.quantity)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
