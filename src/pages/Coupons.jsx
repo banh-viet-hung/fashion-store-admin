@@ -11,8 +11,8 @@ import {
   TableHeader,
   Badge,
 } from "@windmill/react-ui";
-import { useContext, useState, useEffect } from "react";
-import { FiEdit, FiPlus, FiTrash2 } from "react-icons/fi";
+import { useContext, useState, useEffect, useRef } from "react";
+import { FiEdit, FiPlus, FiTrash2, FiRefreshCw } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 
 //internal import
@@ -20,7 +20,6 @@ import { SidebarContext } from "@/context/SidebarContext";
 import CouponServices from "@/services/CouponServices";
 import useAsync from "@/hooks/useAsync";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
-import useFilter from "@/hooks/useFilter";
 import PageTitle from "@/components/Typography/PageTitle";
 import DeleteModal from "@/components/modal/DeleteModal";
 import BulkActionDrawer from "@/components/drawer/BulkActionDrawer";
@@ -30,56 +29,100 @@ import TableLoading from "@/components/preloader/TableLoading";
 import CheckBox from "@/components/form/others/CheckBox";
 import CouponTable from "@/components/coupon/CouponTable";
 import NotFound from "@/components/table/NotFound";
-import UploadMany from "@/components/common/UploadMany";
 import AnimatedContent from "@/components/common/AnimatedContent";
 
 const Coupons = () => {
   const { t } = useTranslation();
   const { toggleDrawer, lang } = useContext(SidebarContext);
-  const { data: response, loading, error } = useAsync(CouponServices.getAllCoupons);
-  const [couponsData, setCouponsData] = useState([]);
-
-  // Extract data from the response
-  useEffect(() => {
-    if (response && response.success && response.data) {
-      setCouponsData(response.data);
-    }
-  }, [response]);
+  const {
+    currentPage,
+    searchText,
+    resultsPerPage,
+    handleChangePage,
+    setCurrentPage,
+    setIsUpdate,
+    isUpdate,
+  } = useContext(SidebarContext);
 
   const [isCheckAll, setIsCheckAll] = useState(false);
   const [isCheck, setIsCheck] = useState([]);
+  const [searchCode, setSearchCode] = useState("");
+  const [pagination, setPagination] = useState({
+    size: 3,
+    totalPages: 0,
+    totalElements: 0
+  });
+  const couponRef = useRef(null);
 
-  const { allId, serviceId, handleDeleteMany, handleUpdateMany } =
-    useToggleDrawer();
+  const { allId, serviceId, handleDeleteMany } = useToggleDrawer();
 
-  const {
-    filename,
-    isDisabled,
-    couponRef,
-    dataTable,
-    serviceData,
-    totalResults,
-    resultsPerPage,
-    handleChangePage,
-    handleSelectFile,
-    setSearchCoupon,
-    handleSubmitCoupon,
-    handleUploadMultiple,
-    handleRemoveSelectFile,
-  } = useFilter(couponsData);
+  // Define async function for useAsync hook
+  const asyncFunction = async ({ cancelToken }) => {
+    try {
+      const filters = {
+        page: currentPage,
+        size: pagination.size,
+        code: searchCode || undefined
+      };
+
+      const response = await CouponServices.getAllCoupons(filters);
+
+      // Update pagination information
+      setPagination({
+        ...pagination,
+        totalPages: response.data.totalPages,
+        totalElements: response.data.totalElements
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+      throw error;
+    }
+  };
+
+  // Use the useAsync hook for data fetching
+  const { data, loading, error } = useAsync(asyncFunction);
+  
+  // Extract coupons from response
+  const coupons = data?.data?.content || [];
+
+  // Reset state when entering Coupons page
+  useEffect(() => {
+    setCurrentPage(1);
+    setIsUpdate(true);
+  }, [setCurrentPage, setIsUpdate]);
+
+  // Custom handler for page changes
+  const handleCouponPageChange = (p) => {
+    setCurrentPage(p);
+    setIsUpdate(true);
+  };
 
   const handleSelectAll = () => {
     setIsCheckAll(!isCheckAll);
-    setIsCheck(couponsData?.map((li) => String(li.id)));
+    setIsCheck(coupons?.map((li) => String(li.id)));
     if (isCheckAll) {
       setIsCheck([]);
     }
   };
 
+  // handle search function
+  const handleSubmitCoupon = (e) => {
+    e.preventDefault();
+    setSearchCode(couponRef.current.value);
+    setCurrentPage(1);
+    setIsUpdate(true);
+  };
+
   // handle reset field function
   const handleResetField = () => {
-    setSearchCoupon("");
-    couponRef.current.value = "";
+    setSearchCode("");
+    if (couponRef.current) {
+      couponRef.current.value = "";
+    }
+    setCurrentPage(1);
+    setIsUpdate(true);
   };
 
   return (
@@ -153,8 +196,9 @@ const Coupons = () => {
                     layout="outline"
                     onClick={handleResetField}
                     type="reset"
-                    className="px-4 md:py-1 py-2 h-12 text-sm dark:bg-gray-700"
+                    className="flex items-center justify-center gap-2 px-4 h-12 text-sm dark:bg-gray-700 w-full"
                   >
+                    <FiRefreshCw className="h-4 w-4" />
                     <span className="text-black dark:text-gray-200">Hoàn tác</span>
                   </Button>
                 </div>
@@ -170,7 +214,7 @@ const Coupons = () => {
         </div>
       ) : error ? (
         <span className="text-center mx-auto text-red-500">{error}</span>
-      ) : serviceData?.length !== 0 ? (
+      ) : coupons?.length !== 0 ? (
         <Card className="shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <CardBody className="p-0">
             <TableContainer className="mb-0">
@@ -200,19 +244,19 @@ const Coupons = () => {
                 <CouponTable
                   lang={lang}
                   isCheck={isCheck}
-                  coupons={dataTable}
+                  coupons={coupons}
                   setIsCheck={setIsCheck}
                 />
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {dataTable?.length || 0} trên {totalResults || 0} coupons
+                    Hiển thị {coupons?.length || 0} trên {pagination.totalElements || 0} coupons
                   </div>
                   <Pagination
-                    totalResults={totalResults}
-                    resultsPerPage={resultsPerPage}
-                    onChange={handleChangePage}
+                    totalResults={pagination.totalElements}
+                    resultsPerPage={pagination.size}
+                    onChange={handleCouponPageChange}
                     label="Table navigation"
                   />
                 </div>
