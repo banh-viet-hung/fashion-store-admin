@@ -3,25 +3,14 @@ import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 //internal import
-import useUtilsFunction from "./useUtilsFunction";
 import { SidebarContext } from "@/context/SidebarContext";
 import CouponServices from "@/services/CouponServices";
 import { notifyError, notifySuccess } from "@/utils/toast";
-import useTranslationValue from "./useTranslationValue";
 
 const useCouponSubmit = (id) => {
-  const { isDrawerOpen, closeDrawer, setIsUpdate, lang } =
-    useContext(SidebarContext);
-  const [imageUrl, setImageUrl] = useState("");
-  const [language, setLanguage] = useState("en");
-  const [resData, setResData] = useState({});
-  const [published, setPublished] = useState(false);
-  const [discountType, setDiscountType] = useState(false);
+  const { isDrawerOpen, closeDrawer, setIsUpdate } = useContext(SidebarContext);
+  const [discountType, setDiscountType] = useState(true); // true = PERCENT, false = FIXED
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { currency } = useUtilsFunction();
-
-  const { handlerTextTranslateHandler } = useTranslationValue();
 
   const {
     register,
@@ -32,126 +21,163 @@ const useCouponSubmit = (id) => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    console.log("coupon data", data);
     try {
       setIsSubmitting(true);
-      const titleTranslates = await handlerTextTranslateHandler(
-        data.title,
-        language,
-        resData?.title
-      );
 
       const couponData = {
-        title: {
-          ...titleTranslates,
-          [language]: data.title,
-        },
-        couponCode: data.couponCode,
-        endTime: data.endTime,
-        minimumAmount: data.minimumAmount,
-        logo: imageUrl,
-        lang: language,
-        status: published ? "show" : "hide",
-        discountType: {
-          type: discountType ? "percentage" : "fixed",
-          value: data.discountPercentage,
-        },
-        productType: data.productType,
+        code: data.code,
+        description: data.description,
+        discountType: discountType ? "PERCENT" : "FIXED",
+        discountValue: parseFloat(data.discountValue),
+        startDate: data.startDate,
+        endDate: data.endDate,
+        usageLimit: parseInt(data.usageLimit),
+        minOrderValue: parseFloat(data.minOrderValue)
       };
 
-      // setIsSubmitting(false);
-      // console.log("couponData", couponData, "titleTranslates", titleTranslates);
-
-      return;
+      console.log("Submitting coupon data:", { id, data: couponData });
 
       if (id) {
+        console.log("Updating coupon with ID:", id);
         const res = await CouponServices.updateCoupon(id, couponData);
+        console.log("Update coupon response:", res);
         setIsUpdate(true);
         setIsSubmitting(false);
-        notifySuccess(res.message);
+        notifySuccess(res.message || "Cập nhật mã giảm giá thành công");
         closeDrawer();
       } else {
+        console.log("Creating new coupon");
         const res = await CouponServices.addCoupon(couponData);
+        console.log("Create coupon response:", res);
         setIsUpdate(true);
         setIsSubmitting(false);
-        notifySuccess(res.message);
+        notifySuccess(res.message || "Tạo mã giảm giá mới thành công");
         closeDrawer();
       }
     } catch (err) {
-      notifyError(err?.response?.data?.message || err?.message);
+      console.error("Error submitting coupon:", err);
+      if (err?.response?.data?.message === "Mã giảm giá này đã tồn tại") {
+        notifyError("Mã giảm giá này đã tồn tại");
+      } else {
+        notifyError(err?.response?.data?.message || err?.message || "Đã xảy ra lỗi");
+      }
       setIsSubmitting(false);
-      closeDrawer();
-    }
-  };
-
-  const handleSelectLanguage = (lang) => {
-    setLanguage(lang);
-    if (Object.keys(resData).length > 0) {
-      setValue("title", resData.title[lang ? lang : "en"]);
     }
   };
 
   useEffect(() => {
     if (!isDrawerOpen) {
-      setResData({});
-      setValue("title");
-      setValue("productType");
-      setValue("couponCode");
-      setValue("endTime");
-      setValue("discountPercentage");
-      setValue("minimumAmount");
-      setImageUrl("");
-      clearErrors("title");
-      clearErrors("productType");
-      clearErrors("couponCode");
-      clearErrors("endTime");
-      clearErrors("discountPercentage");
-      clearErrors("minimumAmount");
-      setLanguage(lang);
-      setValue("language", language);
+      setValue("code", "");
+      setValue("description", "");
+      setValue("startDate", "");
+      setValue("endDate", "");
+      setValue("discountValue", "");
+      setValue("minOrderValue", "");
+      setValue("usageLimit", "");
+      clearErrors();
+      setDiscountType(true);
       return;
     }
+    
     if (id) {
+      console.log("Fetching coupon data for ID:", id);
       (async () => {
         try {
           const res = await CouponServices.getCouponById(id);
-          if (res) {
-            // console.log('res coupon', res);
-            setResData(res);
-            setValue("title", res.title[language ? language : "en"]);
-            setValue("productType", res.productType);
-            setValue("couponCode", res.couponCode);
-
-            setValue("endTime", dayjs(res.endTime).format("YYYY-MM-DD HH:mm"));
-            setValue("discountPercentage", res.discountType?.value);
-            setValue("minimumAmount", res.minimumAmount);
-            setPublished(res.status === "show" ? true : false);
-            setDiscountType(
-              res.discountType?.type === "percentage" ? true : false
-            );
-            setImageUrl(res.logo);
+          console.log("API response for coupon data:", res);
+          if (res && res.data) {
+            const coupon = res.data;
+            setValue("code", coupon.code);
+            setValue("description", coupon.description);
+            setValue("startDate", dayjs(coupon.startDate).format("YYYY-MM-DDTHH:mm"));
+            setValue("endDate", dayjs(coupon.endDate).format("YYYY-MM-DDTHH:mm"));
+            setValue("discountValue", coupon.discountValue);
+            setValue("minOrderValue", coupon.minOrderValue);
+            setValue("usageLimit", coupon.usageLimit);
+            setDiscountType(coupon.discountType === "PERCENT");
           }
         } catch (err) {
-          notifyError(err?.response?.data?.message || err?.message);
+          console.error("Error fetching coupon data:", err);
+          notifyError(err?.response?.data?.message || err?.message || "Không thể tải dữ liệu");
         }
       })();
     }
-  }, [id, setValue, isDrawerOpen, clearErrors, language, lang]);
+  }, [id, setValue, isDrawerOpen, clearErrors]);
+
+  // Form field registration with validation rules
+  const registerField = {
+    code: register("code", { 
+      required: "Mã giảm giá là bắt buộc",
+      minLength: {
+        value: 3,
+        message: "Mã giảm giá phải có ít nhất 3 ký tự"
+      },
+      maxLength: {
+        value: 20,
+        message: "Mã giảm giá không được quá 20 ký tự"
+      },
+      pattern: {
+        value: /^[A-Z0-9_-]+$/,
+        message: "Mã giảm giá chỉ được chứa chữ in hoa, số, dấu gạch ngang và gạch dưới"
+      }
+    }),
+    description: register("description", { 
+      required: "Mô tả mã giảm giá là bắt buộc",
+      maxLength: {
+        value: 100,
+        message: "Mô tả không được quá 100 ký tự"
+      }
+    }),
+    startDate: register("startDate", { 
+      required: "Ngày bắt đầu là bắt buộc"
+    }),
+    endDate: register("endDate", { 
+      required: "Ngày kết thúc là bắt buộc",
+      validate: value => {
+        if (value && document.querySelector('input[name="startDate"]').value) {
+          return new Date(value) > new Date(document.querySelector('input[name="startDate"]').value) || 
+            "Ngày kết thúc phải sau ngày bắt đầu";
+        }
+        return true;
+      }
+    }),
+    discountValue: register("discountValue", { 
+      required: "Giá trị giảm giá là bắt buộc",
+      min: {
+        value: 1,
+        message: "Giá trị giảm giá phải lớn hơn 0"
+      },
+      max: {
+        value: discountType ? 100 : 1000000,
+        message: discountType 
+          ? "Phần trăm giảm giá không được quá 100%" 
+          : "Giá trị giảm giá không được quá 1,000,000 VND"
+      }
+    }),
+    minOrderValue: register("minOrderValue", { 
+      required: "Giá trị đơn hàng tối thiểu là bắt buộc",
+      min: {
+        value: 0,
+        message: "Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 0"
+      }
+    }),
+    usageLimit: register("usageLimit", { 
+      required: "Giới hạn sử dụng là bắt buộc",
+      min: {
+        value: 1,
+        message: "Giới hạn sử dụng phải lớn hơn 0"
+      }
+    })
+  };
 
   return {
-    register,
+    register: registerField,
     handleSubmit,
     onSubmit,
     errors,
-    setImageUrl,
-    imageUrl,
-    published,
-    setPublished,
-    currency,
     discountType,
-    isSubmitting,
     setDiscountType,
-    handleSelectLanguage,
+    isSubmitting
   };
 };
 

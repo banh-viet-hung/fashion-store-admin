@@ -154,11 +154,9 @@ export const SidebarProvider = ({ children }) => {
   }, []);
 
   const openEditDrawer = (id) => {
-    console.log("openEditDrawer called with id:", id);
     setProductId(id);
     setDrawerType("edit");
     setIsDrawerOpen(true);
-    console.log("After setting state:", { productId: id, drawerType: "edit", isDrawerOpen: true });
   };
 
   return (

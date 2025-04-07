@@ -1,17 +1,13 @@
 import { Input } from "@windmill/react-ui";
-import { t } from "i18next";
 import { Scrollbars } from "react-custom-scrollbars-2";
 
 //internal import
-import Title from "@/components/form/others/Title";
 import Error from "@/components/form/others/Error";
 import InputArea from "@/components/form/input/InputArea";
 import InputValue from "@/components/form/input/InputValue";
 import LabelArea from "@/components/form/selectOption/LabelArea";
-import Uploader from "@/components/image-uploader/Uploader";
 import useCouponSubmit from "@/hooks/useCouponSubmit";
 import DrawerButton from "@/components/form/button/DrawerButton";
-import SwitchToggle from "@/components/form/switch/SwitchToggle";
 import SwitchToggleFour from "@/components/form/switch/SwitchToggleFour";
 
 const CouponDrawer = ({ id }) => {
@@ -20,34 +16,28 @@ const CouponDrawer = ({ id }) => {
     handleSubmit,
     onSubmit,
     errors,
-    setImageUrl,
-    imageUrl,
-    published,
-    setPublished,
-    currency,
     discountType,
     setDiscountType,
     isSubmitting,
-    handleSelectLanguage,
   } = useCouponSubmit(id);
 
   return (
     <>
-      <div className="w-full relative  p-6 border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 ">
+      <div className="w-full relative p-6 border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
         {id ? (
-          <Title
-            register={register}
-            handleSelectLanguage={handleSelectLanguage}
-            title={t("UpdateCoupon")}
-            description={t("UpdateCouponDescription")}
-          />
+          <div>
+            <h2 className="text-xl font-medium">Cập nhật mã giảm giá</h2>
+            <p className="text-sm text-gray-500">
+              Cập nhật thông tin mã giảm giá hiện có
+            </p>
+          </div>
         ) : (
-          <Title
-            register={register}
-            handleSelectLanguage={handleSelectLanguage}
-            title={t("AddCoupon")}
-            description={t("AddCouponDescription")}
-          />
+          <div>
+            <h2 className="text-xl font-medium">Thêm mã giảm giá mới</h2>
+            <p className="text-sm text-gray-500">
+              Tạo mã giảm giá mới cho khách hàng
+            </p>
+          </div>
         )}
       </div>
 
@@ -55,123 +45,125 @@ const CouponDrawer = ({ id }) => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="px-6 pt-8 flex-grow scrollbar-hide w-full max-h-full pb-40">
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("CouponBannerImage")} />
-              <div className="col-span-8 sm:col-span-4">
-                <Uploader
-                  imageUrl={imageUrl}
-                  setImageUrl={setImageUrl}
-                  folder="coupon"
-                  targetWidth={238}
-                  targetHeight={238}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("CampaignName")} />
-              <div className="col-span-8 sm:col-span-4">
-                <InputArea
-                  required={true}
-                  register={register}
-                  label="Coupon title"
-                  name="title"
-                  type="text"
-                  placeholder={t("CampaignName")}
-                />
-                <Error errorName={errors.title} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("CampaignCode")} />
-              <div className="col-span-8 sm:col-span-4">
-                <InputArea
-                  required={true}
-                  register={register}
-                  label="Coupon Code"
-                  name="couponCode"
-                  type="text"
-                  placeholder={t("CampaignCode")}
-                />
-                <Error errorName={errors.couponCode} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("CouponValidityTime")} />
+              <LabelArea label="Mô tả mã giảm giá" />
               <div className="col-span-8 sm:col-span-4">
                 <Input
-                  {...register(`endTime`, {
-                    required: "Coupon Validation End Time",
-                  })}
-                  label="Coupon Validation End Time"
-                  name="endTime"
-                  type="datetime-local"
-                  placeholder={t("CouponValidityTime")}
+                  className="mr-2 h-12 p-2"
+                  name="description"
+                  type="text"
+                  placeholder="Nhập mô tả mã giảm giá"
+                  {...register.description}
                 />
-
-                <Error errorName={errors.endTime} />
+                <Error errorName={errors.description} />
               </div>
             </div>
 
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("DiscountType")} />
+              <LabelArea label="Mã giảm giá" />
+              <div className="col-span-8 sm:col-span-4">
+                <Input
+                  className="mr-2 h-12 p-2"
+                  name="code"
+                  type="text"
+                  placeholder="Nhập mã giảm giá (VD: SUMMER2024)"
+                  {...register.code}
+                />
+                <Error errorName={errors.code} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Ngày bắt đầu" />
+              <div className="col-span-8 sm:col-span-4">
+                <Input
+                  className="mr-2 h-12 p-2"
+                  name="startDate"
+                  type="datetime-local"
+                  placeholder="Ngày bắt đầu"
+                  {...register.startDate}
+                />
+                <Error errorName={errors.startDate} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Ngày kết thúc" />
+              <div className="col-span-8 sm:col-span-4">
+                <Input
+                  className="mr-2 h-12 p-2"
+                  name="endDate"
+                  type="datetime-local"
+                  placeholder="Ngày kết thúc"
+                  {...register.endDate}
+                />
+                <Error errorName={errors.endDate} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Loại giảm giá" />
               <div className="col-span-8 sm:col-span-4">
                 <SwitchToggleFour
                   handleProcess={setDiscountType}
                   processOption={discountType}
+                  activeText="Phần trăm"
+                  inactiveText="Số tiền cố định"
                 />
-                <Error errorName={errors.discountType} />
+                <small className="block mt-1">
+                  {discountType ? "PERCENT (giảm giá theo %)" : "FIXED (giảm giá cố định)"}
+                </small>
               </div>
             </div>
 
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("Discount")} />
+              <LabelArea label="Giá trị giảm giá" />
               <div className="col-span-8 sm:col-span-4">
-                <InputValue
-                  product
-                  required={true}
-                  register={register}
-                  maxValue={discountType ? 99 : 1000}
-                  minValue={1}
-                  label="Discount"
-                  name="discountPercentage"
+                <div className="flex flex-row">
+                  <span className="inline-flex items-center px-3 rounded rounded-r-none border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm focus:border-emerald-300 dark:bg-gray-700 dark:text-gray-300 dark:border dark:border-gray-600">
+                    {discountType ? "%" : "VND"}
+                  </span>
+                  <Input
+                    className="mr-2 p-2 rounded-l-none"
+                    name="discountValue"
+                    type="number"
+                    placeholder={discountType ? "Nhập phần trăm (1-100)" : "Nhập số tiền cố định"}
+                    {...register.discountValue}
+                  />
+                </div>
+                <Error errorName={errors.discountValue} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Giá trị đơn hàng tối thiểu" />
+              <div className="col-span-8 sm:col-span-4">
+                <div className="flex flex-row">
+                  <span className="inline-flex items-center px-3 rounded rounded-r-none border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm focus:border-emerald-300 dark:bg-gray-700 dark:text-gray-300 dark:border dark:border-gray-600">
+                    VND
+                  </span>
+                  <Input
+                    className="mr-2 p-2 rounded-l-none"
+                    name="minOrderValue"
+                    type="number"
+                    placeholder="Nhập giá trị đơn hàng tối thiểu"
+                    {...register.minOrderValue}
+                  />
+                </div>
+                <Error errorName={errors.minOrderValue} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Giới hạn sử dụng" />
+              <div className="col-span-8 sm:col-span-4">
+                <Input
+                  className="mr-2 h-12 p-2"
+                  name="usageLimit"
                   type="number"
-                  placeholder={discountType ? "Percentage" : "Fixed Amount"}
-                  currency={discountType ? "%" : currency}
+                  placeholder="Nhập số lần sử dụng tối đa"
+                  {...register.usageLimit}
                 />
-
-                <Error errorName={errors.discountPercentage} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("MinimumAmount")} />
-              <div className="col-span-8 sm:col-span-4">
-                <InputValue
-                  product
-                  required={true}
-                  register={register}
-                  maxValue={200000}
-                  minValue={100}
-                  label="Minimum Amount"
-                  name="minimumAmount"
-                  type="number"
-                  placeholder={t("MinimumAmountPlasholder")}
-                  currency={currency}
-                />
-                <Error errorName={errors.minimumAmount} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
-              <LabelArea label={t("Published")} />
-              <div className="col-span-8 sm:col-span-4">
-                <SwitchToggle
-                  handleProcess={setPublished}
-                  processOption={published}
-                />
-                <Error errorName={errors.productType} />
+                <Error errorName={errors.usageLimit} />
               </div>
             </div>
           </div>

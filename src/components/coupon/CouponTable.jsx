@@ -23,6 +23,13 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
 
   const { title, serviceId, handleModalOpen, handleUpdate } = useToggleDrawer();
 
+  // Debug: log coupon IDs
+  useEffect(() => {
+    if (coupons && coupons.length > 0) {
+      console.log("CouponTable - Available coupon IDs:", coupons.map(coupon => coupon.id));
+    }
+  }, [coupons]);
+
   const { currency, showDateFormat, globalSetting, showingTranslateValue } =
     useUtilsFunction();
 
@@ -36,17 +43,29 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
 
   useEffect(() => {
     const result = coupons?.map((el) => {
-      const newDate = new Date(el?.updatedAt).toLocaleString("en-US", {
+      const startDate = new Date(el?.startDate).toLocaleString("vi-VN", {
+        timeZone: globalSetting?.default_time_zone,
+      });
+      const endDate = new Date(el?.endDate).toLocaleString("vi-VN", {
         timeZone: globalSetting?.default_time_zone,
       });
       const newObj = {
         ...el,
-        updatedDate: newDate,
+        startTime: el?.startDate,
+        endTime: el?.endDate,
+        updatedDate: startDate,
       };
       return newObj;
     });
     setUpdatedCoupons(result);
   }, [coupons, globalSetting?.default_time_zone]);
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(value);
+  };
 
   return (
     <>
@@ -64,30 +83,18 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
             <TableCell>
               <CheckBox
                 type="checkbox"
-                name={coupon?.title?.en}
-                id={coupon._id}
+                name={coupon?.description || coupon?.code}
+                id={coupon.id}
                 handleClick={handleClick}
-                isChecked={isCheck?.includes(coupon._id)}
+                isChecked={isCheck?.includes(coupon.id)}
               />
             </TableCell>
 
             <TableCell>
               <div className="flex items-center">
-                {coupon?.logo ? (
-                  <Avatar
-                    className="hidden p-1 mr-2 md:block bg-gray-50 shadow-none"
-                    src={coupon?.logo}
-                    alt="product"
-                  />
-                ) : (
-                  <Avatar
-                    src={`https://res.cloudinary.com/ahossain/image/upload/v1655097002/placeholder_kvepfp.png`}
-                    alt="product"
-                  />
-                )}
                 <div>
                   <span className="text-sm">
-                    {showingTranslateValue(coupon?.title)}
+                    {coupon?.description || "N/A"}
                   </span>{" "}
                 </div>
               </div>{" "}
@@ -95,59 +102,45 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
 
             <TableCell>
               {" "}
-              <span className="text-sm"> {coupon.couponCode}</span>{" "}
-            </TableCell>
-
-            {coupon?.discountType?.type ? (
-              <TableCell>
-                {" "}
-                <span className="text-sm font-semibold">
-                  {" "}
-                  {coupon?.discountType?.type === "percentage"
-                    ? `${coupon?.discountType?.value}%`
-                    : `${currency}${coupon?.discountType?.value}`}
-                </span>{" "}
-              </TableCell>
-            ) : (
-              <TableCell>
-                {" "}
-                <span className="text-sm font-semibold"> </span>{" "}
-              </TableCell>
-            )}
-
-            <TableCell className="text-center">
-              <ShowHideButton id={coupon._id} status={coupon.status} />
+              <span className="text-sm"> {coupon.code}</span>{" "}
             </TableCell>
 
             <TableCell>
+              {" "}
+              <span className="text-sm font-semibold">
+                {" "}
+                {coupon?.discountType === "PERCENT"
+                  ? `${coupon?.discountValue}%`
+                  : formatCurrency(coupon?.discountValue)}
+              </span>{" "}
+            </TableCell>
+            <TableCell>
               <span className="text-sm">
-                {/* {dayjs(coupon.startTime).format("MMM D, YYYY")} */}
-                {showDateFormat(coupon.startTime)}
+                {dayjs(coupon.startDate).format("DD/MM/YYYY")}
               </span>
             </TableCell>
 
             <TableCell>
               <span className="text-sm">
-                {/* {dayjs(coupon.endTime).format("MMM D, YYYY")} */}
-                {showDateFormat(coupon.endTime)}
+                {dayjs(coupon.endDate).format("DD/MM/YYYY")}
               </span>
             </TableCell>
 
             <TableCell className="align-middle ">
-              {dayjs().isAfter(dayjs(coupon.endTime)) ? (
-                <Badge type="danger">Expired</Badge>
+              {dayjs().isAfter(dayjs(coupon.endDate)) ? (
+                <Badge type="danger">Hết hạn</Badge>
               ) : (
-                <Badge type="success">Active</Badge>
+                <Badge type="success">Còn hạn</Badge>
               )}
             </TableCell>
 
             <TableCell>
               <EditDeleteButton
-                id={coupon?._id}
+                id={coupon?.id}
                 isCheck={isCheck}
                 handleUpdate={handleUpdate}
                 handleModalOpen={handleModalOpen}
-                title={showingTranslateValue(coupon?.title)}
+                title={coupon?.description || coupon?.code}
               />
             </TableCell>
           </TableRow>

@@ -10,7 +10,7 @@ import {
   TableFooter,
   TableHeader,
 } from "@windmill/react-ui";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { FiEdit, FiPlus, FiTrash2 } from "react-icons/fi";
 import { useTranslation } from "react-i18next";
 
@@ -35,8 +35,16 @@ import AnimatedContent from "@/components/common/AnimatedContent";
 const Coupons = () => {
   const { t } = useTranslation();
   const { toggleDrawer, lang } = useContext(SidebarContext);
-  const { data, loading, error } = useAsync(CouponServices.getAllCoupons);
-  // console.log('data',data)
+  const { data: response, loading, error } = useAsync(CouponServices.getAllCoupons);
+  const [couponsData, setCouponsData] = useState([]);
+
+  // Extract data from the response
+  useEffect(() => {
+    if (response && response.success && response.data) {
+      setCouponsData(response.data);
+    }
+  }, [response]);
+
   const [isCheckAll, setIsCheckAll] = useState(false);
   const [isCheck, setIsCheck] = useState([]);
 
@@ -57,11 +65,11 @@ const Coupons = () => {
     handleSubmitCoupon,
     handleUploadMultiple,
     handleRemoveSelectFile,
-  } = useFilter(data);
+  } = useFilter(couponsData);
 
   const handleSelectAll = () => {
     setIsCheckAll(!isCheckAll);
-    setIsCheck(data?.map((li) => li._id));
+    setIsCheck(couponsData?.map((li) => li.id));
     if (isCheckAll) {
       setIsCheck([]);
     }
@@ -97,7 +105,7 @@ const Coupons = () => {
               <div className="flex-grow-0 sm:flex-grow md:flex-grow lg:flex-grow xl:flex-grow">
                 {/* <UploadMany
                   title="Coupon"
-                  exportData={data}
+                  exportData={couponsData}
                   filename={filename}
                   isDisabled={isDisabled}
                   handleSelectFile={handleSelectFile}
@@ -160,7 +168,7 @@ const Coupons = () => {
                 <Input
                   ref={couponRef}
                   type="search"
-                  placeholder={t("Nhập tên coupon")}
+                  placeholder={t("Nhập code")}
                 />
               </div>
               <div className="flex items-center gap-2 flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
@@ -205,18 +213,14 @@ const Coupons = () => {
                     isChecked={isCheckAll}
                   />
                 </TableCell>
-                <TableCell>{t("CoupTblCampaignsName")}</TableCell>
-                <TableCell>{t("CoupTblCode")}</TableCell>
-                <TableCell>{t("Discount")}</TableCell>
-
-                <TableCell className="text-center">
-                  {t("catPublishedTbl")}
-                </TableCell>
-                <TableCell>{t("CoupTblStartDate")}</TableCell>
-                <TableCell>{t("CoupTblEndDate")}</TableCell>
-                <TableCell>{t("CoupTblStatus")}</TableCell>
+                <TableCell>Tên chiến dịch</TableCell>
+                <TableCell>Mã giảm giá</TableCell>
+                <TableCell>Giảm giá</TableCell>
+                <TableCell>Ngày bắt đầu</TableCell>
+                <TableCell>Ngày kết thúc</TableCell>
+                <TableCell>Trạng thái</TableCell>
                 <TableCell className="text-right">
-                  {t("CoupTblActions")}
+                  Thao tác
                 </TableCell>
               </tr>
             </TableHeader>
