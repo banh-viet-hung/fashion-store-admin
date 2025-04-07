@@ -89,7 +89,7 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
             <TableCell>
               <div className="flex items-center">
                 <div>
-                  <span className="text-sm">
+                  <span className="text-sm font-medium">
                     {coupon?.description || "N/A"}
                   </span>{" "}
                 </div>
@@ -97,40 +97,37 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
             </TableCell>
 
             <TableCell>
-              {" "}
-              <span className="text-sm"> {coupon.code}</span>{" "}
+              <span className="text-sm font-medium"> {coupon.code}</span>{" "}
             </TableCell>
 
             <TableCell>
-              {" "}
               <span className="text-sm font-semibold">
-                {" "}
                 {coupon?.discountType === "PERCENT"
                   ? `${coupon?.discountValue}%`
                   : formatCurrency(coupon?.discountValue)}
               </span>{" "}
             </TableCell>
             <TableCell>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {dayjs(coupon.startDate).format("DD/MM/YYYY")}
               </span>
             </TableCell>
 
             <TableCell>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {dayjs(coupon.endDate).format("DD/MM/YYYY")}
               </span>
             </TableCell>
 
-            <TableCell className="align-middle ">
+            <TableCell className="text-center">
               {dayjs().isAfter(dayjs(coupon.endDate)) ? (
-                <Badge type="danger">Hết hạn</Badge>
+                <Badge type="danger" className="px-2 py-1 text-xs">Hết hạn</Badge>
               ) : (
-                <Badge type="success">Còn hạn</Badge>
+                <Badge type="success" className="px-2 py-1 text-xs">Còn hạn</Badge>
               )}
             </TableCell>
 
-            <TableCell>
+            <TableCell className="text-right">
               <EditDeleteButton
                 id={coupon?.id}
                 isCheck={isCheck}

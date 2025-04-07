@@ -42,7 +42,7 @@ const Customers = () => {
 
   const asyncFunction = async ({ cancelToken }) => {
     const page = currentPage;
-    const size = 5;
+    const size = 3;
     const email = searchText || "";
     return CustomerServices.getAllCustomers({ page, size, email, cancelToken });
   };

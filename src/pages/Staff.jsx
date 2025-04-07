@@ -58,7 +58,7 @@ const Staff = () => {
   const asyncFunction = async ({ cancelToken }) => {
     return AdminServices.getAllStaff({
       page: currentPage,
-      size: 5,
+      size: 3,
       email: searchText,
       roleName: selectedRole,
       cancelToken,

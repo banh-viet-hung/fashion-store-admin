@@ -10,9 +10,11 @@ import {
   TableFooter,
   TableHeader,
   Badge,
+  Select,
 } from "@windmill/react-ui";
 import { useContext, useState, useEffect, useRef } from "react";
-import { FiEdit, FiPlus, FiTrash2, FiRefreshCw } from "react-icons/fi";
+import { FiEdit, FiPlus, FiTrash2, FiRefreshCw, FiFilter, FiCalendar, FiInfo, FiList } from "react-icons/fi";
+import { IoSearch, IoClose } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 
 //internal import
@@ -47,6 +49,7 @@ const Coupons = () => {
   const [isCheckAll, setIsCheckAll] = useState(false);
   const [isCheck, setIsCheck] = useState([]);
   const [searchCode, setSearchCode] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const [pagination, setPagination] = useState({
     size: 3,
     totalPages: 0,
@@ -125,6 +128,24 @@ const Coupons = () => {
     setIsUpdate(true);
   };
 
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
+
+  // Calculate active filters count
+  const getActiveFiltersCount = () => {
+    return searchCode ? 1 : 0;
+  };
+
+  // Generate filter summary text
+  const getFilterSummary = () => {
+    const summaries = [];
+    
+    if (searchCode) summaries.push(`Mã giảm giá: ${searchCode}`);
+    
+    return summaries;
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -143,6 +164,21 @@ const Coupons = () => {
             {isCheck?.length > 0 && (
               <Badge type="danger" className="ml-1 px-1.5 py-0.5">
                 {isCheck?.length}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            layout="outline"
+            size="small"
+            className="flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600"
+            onClick={toggleFilters}
+          >
+            <FiFilter className="h-4 w-4" />
+            <span className="hidden md:inline-block">Lọc</span>
+            {getActiveFiltersCount() > 0 && (
+              <Badge type="danger" className="ml-1 px-1.5 py-0.5">
+                {getActiveFiltersCount()}
               </Badge>
             )}
           </Button>
@@ -170,42 +206,95 @@ const Coupons = () => {
         <CouponDrawer id={serviceId} />
       </MainDrawer>
 
-      <AnimatedContent>
-        <Card className="min-w-0 shadow-xs overflow-hidden bg-white dark:bg-gray-800 mb-5">
-          <CardBody>
-            <form
-              onSubmit={handleSubmitCoupon}
-              className="py-3 grid gap-4 lg:gap-6 xl:gap-6 md:flex xl:flex"
-            >
-              <div className="flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
-                <Input
-                  ref={couponRef}
-                  type="search"
-                  placeholder={t("Nhập code")}
-                />
+      {/* Active filter summary */}
+      {getActiveFiltersCount() > 0 && (
+        <div className="mb-4">
+          <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FiInfo className="text-blue-500 mr-2" />
+                <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">Lọc hiện tại:</span>
               </div>
-              <div className="flex items-center gap-2 flex-grow-0 md:flex-grow lg:flex-grow xl:flex-grow">
-                <div className="w-full mx-1">
-                  <Button type="submit" className="h-12 w-full bg-emerald-700">
-                    Áp dụng
-                  </Button>
-                </div>
+              <Button
+                layout="link"
+                size="small"
+                className="text-blue-600 text-xs hover:text-blue-800"
+                onClick={handleResetField}
+              >
+                Xóa tất cả
+              </Button>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {getFilterSummary().map((summary, index) => (
+                <Badge key={index} type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
+                  {summary}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
-                <div className="w-full mx-1">
-                  <Button
-                    layout="outline"
-                    onClick={handleResetField}
-                    type="reset"
-                    className="flex items-center justify-center gap-2 px-4 h-12 text-sm dark:bg-gray-700 w-full"
-                  >
-                    <FiRefreshCw className="h-4 w-4" />
-                    <span className="text-black dark:text-gray-200">Hoàn tác</span>
-                  </Button>
+      <AnimatedContent>
+        <div className={`transition-all duration-300 overflow-hidden ${showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+          <Card className="min-w-0 shadow-sm bg-white dark:bg-gray-800 mb-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                <FiFilter className="mr-2 h-4 w-4 text-emerald-500" />
+                Lọc mã giảm giá
+              </h3>
+              <Button
+                layout="link"
+                size="small"
+                className="text-gray-500 hover:text-gray-700"
+                onClick={toggleFilters}
+              >
+                <IoClose className="h-5 w-5" />
+              </Button>
+            </div>
+            <CardBody className="p-4">
+              <form
+                onSubmit={handleSubmitCoupon}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-4 space-y-3">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <IoSearch className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <Input
+                        ref={couponRef}
+                        type="search"
+                        placeholder={t("Nhập code")}
+                        className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="md:col-span-8 flex items-end gap-3">
+                    <Button 
+                      type="submit" 
+                      className="h-10 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-5 w-32 justify-center shadow-sm hover:shadow-md font-medium"
+                    >
+                      <IoSearch className="h-4 w-4" />
+                      <span>Áp dụng</span>
+                    </Button>
+
+                    <Button
+                      type="reset"
+                      onClick={handleResetField}
+                      className="h-10 bg-red-300 hover:bg-red-400 dark:bg-red-700 dark:hover:bg-red-600 text-white dark:text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-5 w-32 justify-center shadow-sm hover:shadow-md font-medium border-0"
+                    >
+                      <FiRefreshCw className="h-4 w-4" />
+                      <span>Đặt lại</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </CardBody>
-        </Card>
+              </form>
+            </CardBody>
+          </Card>
+        </div>
       </AnimatedContent>
 
       {loading ? (
@@ -230,13 +319,13 @@ const Coupons = () => {
                         isChecked={isCheckAll}
                       />
                     </TableCell>
-                    <TableCell>Tên chiến dịch</TableCell>
-                    <TableCell>Mã giảm giá</TableCell>
-                    <TableCell>Giảm giá</TableCell>
-                    <TableCell>Ngày bắt đầu</TableCell>
-                    <TableCell>Ngày kết thúc</TableCell>
-                    <TableCell>Trạng thái</TableCell>
-                    <TableCell className="text-right pr-4">
+                    <TableCell className="font-semibold text-xs uppercase">Tên chiến dịch</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Mã giảm giá</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Giảm giá</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Ngày bắt đầu</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Ngày kết thúc</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase text-center">Trạng thái</TableCell>
+                    <TableCell className="text-right pr-4 font-semibold text-xs uppercase">
                       Thao tác
                     </TableCell>
                   </tr>

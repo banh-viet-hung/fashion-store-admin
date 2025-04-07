@@ -34,7 +34,7 @@ const Category = () => {
   const { t } = useTranslation();
   const { title, handleDeleteMany, allId, serviceId } = useToggleDrawer();
 
-  const pageSize = 20;
+  const pageSize = 10;
 
   const { data, loading, error } = useAsync(() =>
     CategoryServices.getAllCategory(currentPage - 1, pageSize)
