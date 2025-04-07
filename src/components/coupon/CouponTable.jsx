@@ -23,22 +23,18 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
 
   const { title, serviceId, handleModalOpen, handleUpdate } = useToggleDrawer();
 
-  // Debug: log coupon IDs
-  useEffect(() => {
-    if (coupons && coupons.length > 0) {
-      console.log("CouponTable - Available coupon IDs:", coupons.map(coupon => coupon.id));
-    }
-  }, [coupons]);
-
   const { currency, showDateFormat, globalSetting, showingTranslateValue } =
     useUtilsFunction();
 
   const handleClick = (e) => {
     const { id, checked } = e.target;
-    setIsCheck([...isCheck, id]);
-    if (!checked) {
-      setIsCheck(isCheck.filter((item) => item !== id));
-    }
+    setIsCheck((prev) => {
+      if (checked) {
+        return prev.includes(id) ? prev : [...prev, id];
+      } else {
+        return prev.filter((item) => item !== id);
+      }
+    });
   };
 
   useEffect(() => {
@@ -84,9 +80,9 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
               <CheckBox
                 type="checkbox"
                 name={coupon?.description || coupon?.code}
-                id={coupon.id}
+                id={String(coupon.id)}
                 handleClick={handleClick}
-                isChecked={isCheck?.includes(coupon.id)}
+                isChecked={isCheck?.includes(String(coupon.id))}
               />
             </TableCell>
 

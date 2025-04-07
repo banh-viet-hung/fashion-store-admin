@@ -35,27 +35,20 @@ const useCouponSubmit = (id) => {
         minOrderValue: parseFloat(data.minOrderValue)
       };
 
-      console.log("Submitting coupon data:", { id, data: couponData });
-
       if (id) {
-        console.log("Updating coupon with ID:", id);
         const res = await CouponServices.updateCoupon(id, couponData);
-        console.log("Update coupon response:", res);
         setIsUpdate(true);
         setIsSubmitting(false);
         notifySuccess(res.message || "Cập nhật mã giảm giá thành công");
         closeDrawer();
       } else {
-        console.log("Creating new coupon");
         const res = await CouponServices.addCoupon(couponData);
-        console.log("Create coupon response:", res);
         setIsUpdate(true);
         setIsSubmitting(false);
         notifySuccess(res.message || "Tạo mã giảm giá mới thành công");
         closeDrawer();
       }
     } catch (err) {
-      console.error("Error submitting coupon:", err);
       if (err?.response?.data?.message === "Mã giảm giá này đã tồn tại") {
         notifyError("Mã giảm giá này đã tồn tại");
       } else {
@@ -80,11 +73,9 @@ const useCouponSubmit = (id) => {
     }
     
     if (id) {
-      console.log("Fetching coupon data for ID:", id);
       (async () => {
         try {
           const res = await CouponServices.getCouponById(id);
-          console.log("API response for coupon data:", res);
           if (res && res.data) {
             const coupon = res.data;
             setValue("code", coupon.code);
@@ -97,7 +88,6 @@ const useCouponSubmit = (id) => {
             setDiscountType(coupon.discountType === "PERCENT");
           }
         } catch (err) {
-          console.error("Error fetching coupon data:", err);
           notifyError(err?.response?.data?.message || err?.message || "Không thể tải dữ liệu");
         }
       })();
