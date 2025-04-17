@@ -2,7 +2,7 @@ import requests from './httpService';
 
 const CouponServices = {
   addCoupon: async (body) => {
-    return requests.post('/coupons', body);
+    return requests.post('/coupons/create', body);
   },
   addAllCoupon: async (body) => {
     return requests.post('/coupon/add/all', body);
@@ -17,13 +17,13 @@ const CouponServices = {
     if (size !== undefined) queryString += `${queryString ? '&' : '?'}size=${size}`;
     if (code) queryString += `${queryString ? '&' : '?'}code=${code}`;
     
-    return requests.get(`/coupons${queryString}`);
+    return requests.get(`/coupons/list${queryString}`);
   },
   getCouponById: async (id) => {
-    return requests.get(`/coupons/${id}`);
+    return requests.get(`/coupons/get/${id}`);
   },
   updateCoupon: async (id, body) => {
-    return requests.put(`/coupons/${id}`, body);
+    return requests.put(`/coupons/edit/${id}`, body);
   },
   updateManyCoupons: async (body) => {
     return requests.patch('/coupon/update/many', body);

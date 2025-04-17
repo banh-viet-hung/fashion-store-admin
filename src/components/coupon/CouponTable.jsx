@@ -120,6 +120,22 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
             </TableCell>
 
             <TableCell className="text-center">
+              <div className="flex flex-col items-center">
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {coupon.usedCount}/{coupon.usageLimit}
+                </div>
+                <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
+                  <div 
+                    className="bg-emerald-500 h-2 rounded-full" 
+                    style={{ 
+                      width: `${Math.min(100, (coupon.usedCount / coupon.usageLimit) * 100)}%`,
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </TableCell>
+
+            <TableCell className="text-center">
               {dayjs().isAfter(dayjs(coupon.endDate)) ? (
                 <Badge type="danger" className="px-2 py-1 text-xs">Hết hạn</Badge>
               ) : (

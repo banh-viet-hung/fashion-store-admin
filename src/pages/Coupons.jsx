@@ -324,6 +324,7 @@ const Coupons = () => {
                     <TableCell className="font-semibold text-xs uppercase">Giảm giá</TableCell>
                     <TableCell className="font-semibold text-xs uppercase">Ngày bắt đầu</TableCell>
                     <TableCell className="font-semibold text-xs uppercase">Ngày kết thúc</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase text-center">Lượt sử dụng</TableCell>
                     <TableCell className="font-semibold text-xs uppercase text-center">Trạng thái</TableCell>
                     <TableCell className="text-right pr-4 font-semibold text-xs uppercase">
                       Thao tác
