@@ -209,11 +209,11 @@ const Customers = () => {
               <Table>
                 <TableHeader>
                   <tr className="bg-gray-50 dark:bg-gray-800">
-                    <TableCell>{t("Trạng thái")}</TableCell>
-                    <TableCell>{t("Ngày sinh")}</TableCell>
                     <TableCell>{t("Họ tên")}</TableCell>
                     <TableCell>{t("Email")}</TableCell>
                     <TableCell>{t("SĐT")}</TableCell>
+                    <TableCell>{t("Ngày sinh")}</TableCell>
+                    <TableCell>{t("Trạng thái")}</TableCell>
                     <TableCell className="text-right">{t("Hành động")}</TableCell>
                   </tr>
                 </TableHeader>

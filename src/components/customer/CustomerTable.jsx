@@ -27,23 +27,7 @@ const CustomerTable = ({ customers }) => {
       <TableBody className="dark:bg-gray-900">
         {customers?.map((user) => (
           <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <TableCell>
-              <Badge
-                type={user.active ? "success" : "danger"}
-                className="px-3 py-1 text-xs font-medium"
-              >
-                {user.active ? 'Hoạt động' : 'Bị khóa'}
-              </Badge>
-            </TableCell>
-            
-            <TableCell>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.dateOfBirth
-                  ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
-                  : "Chưa cập nhật"}
-              </span>
-            </TableCell>
-            
+            {/* Họ tên */}
             <TableCell>
               <div className="flex items-center">
                 <Avatar
@@ -56,17 +40,39 @@ const CustomerTable = ({ customers }) => {
                 </div>
               </div>
             </TableCell>
-            
+
+            {/* Email */}
             <TableCell>
               <span className="text-sm text-gray-600 dark:text-gray-400">{user.email}</span>
             </TableCell>
-            
+
+            {/* SĐT */}
             <TableCell>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {user.phoneNumber || "Chưa cập nhật"}
               </span>
             </TableCell>
-            
+
+            {/* Ngày sinh */}
+            <TableCell>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {user.dateOfBirth
+                  ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
+                  : "Chưa cập nhật"}
+              </span>
+            </TableCell>
+
+            {/* Trạng thái */}
+            <TableCell>
+              <Badge
+                type={user.active ? "success" : "danger"}
+                className="px-3 py-1 text-xs font-medium"
+              >
+                {user.active ? 'Hoạt động' : 'Bị khóa'}
+              </Badge>
+            </TableCell>
+
+            {/* Hành động */}
             <TableCell>
               <div className="flex justify-end items-center space-x-1">
                 <div className="p-2 cursor-pointer text-gray-400 hover:text-emerald-600">
