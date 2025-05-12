@@ -110,7 +110,7 @@ const CouponDrawer = ({ id }) => {
                   inactiveText="Số tiền cố định"
                 />
                 <small className="block mt-1">
-                  {discountType ? "PERCENT (giảm giá theo %)" : "FIXED (giảm giá cố định)"}
+                  {discountType ? "Giảm giá theo %" : "Giảm giá cố định"}
                 </small>
               </div>
             </div>

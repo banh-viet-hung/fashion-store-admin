@@ -285,7 +285,7 @@ const Staff = () => {
                     <TableCell>{t("Email")}</TableCell>
                     <TableCell>{t("SĐT")}</TableCell>
                     <TableCell>{t("Ngày sinh")}</TableCell>
-                    <TableCell>{t("ROLE")}</TableCell>
+                    <TableCell>{t("Chức vụ")}</TableCell>
                     <TableCell className="text-center">{t("Trạng thái")}</TableCell>
                     <TableCell className="text-center">{t("Hành động")}</TableCell>
                   </tr>
