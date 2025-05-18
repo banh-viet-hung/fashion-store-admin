@@ -522,9 +522,6 @@ const Orders = () => {
                     <TableCell className="font-semibold text-xs uppercase text-center">
                       {t("Thao tác")}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-xs uppercase pr-4">
-                      {t("InvoiceTbl")}
-                    </TableCell>
                   </tr>
                 </TableHeader>
 

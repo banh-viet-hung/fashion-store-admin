@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import ReactToPrint from "react-to-print";
-import React, { useContext, useRef, useState } from "react";
+import React, { useContext, useRef, useState, useEffect } from "react";
 import { FiPrinter, FiMail } from "react-icons/fi";
 import { IoCloudDownloadOutline } from "react-icons/io5";
 import { Button, Badge } from "@windmill/react-ui";
@@ -25,6 +25,7 @@ import Status from "@/components/table/Status";
 import { notifyError, notifySuccess } from "@/utils/toast";
 import { AdminContext } from "@/context/AdminContext";
 import OrderServices from "@/services/OrderServices";
+import ProductServices from "@/services/ProductServices";
 import Invoice from "@/components/invoice/Invoice";
 import Loading from "@/components/preloader/Loading";
 import logoDark from "@/assets/img/logo/logo-dark.svg";
@@ -43,10 +44,113 @@ const OrderInvoice = () => {
   const { id } = useParams();
   const printRef = useRef();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [productDetails, setProductDetails] = useState({});
+  const [productImages, setProductImages] = useState({});
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   const { data, loading, error } = useAsync(() =>
     OrderServices.getOrderById(id)
   );
+
+  // Fetch product details and images for each product in the order
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (data?.data?.items && data.data.items.length > 0) {
+        setLoadingProducts(true);
+        const detailsMap = {};
+        const imagesMap = {};
+
+        try {
+          // Create an array of promises for concurrent fetching
+          const promises = data.data.items.map(async (item) => {
+            try {
+              // Fetch product details
+              const response = await ProductServices.getProductById(item.productId);
+              if (response && response.success) {
+                detailsMap[item.productId] = response.data;
+
+                // Try to get images from product.image first
+                if (response.data.image && response.data.image.length > 0) {
+                  imagesMap[item.productId] = response.data.image;
+                } else {
+                  // If no direct image, try the separate API
+                  try {
+                    const imagesResponse = await ProductServices.getProductImages(item.productId);
+                    if (imagesResponse && imagesResponse.success) {
+                      // Handle the embedded image structure
+                      if (imagesResponse.data._embedded && imagesResponse.data._embedded.image) {
+                        imagesMap[item.productId] = imagesResponse.data._embedded.image.map(img => img.url);
+                      } else if (Array.isArray(imagesResponse.data)) {
+                        // Handle direct array of images
+                        imagesMap[item.productId] = imagesResponse.data.map(img => img.url || img);
+                      }
+                    }
+                  } catch (imgErr) {
+                    console.error(`Error fetching images for product ${item.productId}:`, imgErr);
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching details for product ${item.productId}:`, err);
+            }
+          });
+
+          // Wait for all product details to be fetched
+          await Promise.all(promises);
+          setProductDetails(detailsMap);
+          setProductImages(imagesMap);
+        } catch (err) {
+          console.error("Error fetching product details:", err);
+        } finally {
+          setLoadingProducts(false);
+        }
+      }
+    };
+
+    fetchProductDetails();
+  }, [data?.data?.items]);
+
+  // Get product image from various possible sources
+  const getProductImage = (productId) => {
+    // Check if we have images for this product
+    if (productImages[productId] && productImages[productId].length > 0) {
+      return productImages[productId][0];
+    }
+
+    // Try to get from product details directly
+    const product = productDetails[productId];
+    if (product) {
+      if (product.image && product.image.length > 0) {
+        return product.image[0];
+      }
+
+      // For some products, it might be a string
+      if (product.image && typeof product.image === 'string') {
+        return product.image;
+      }
+    }
+
+    // Return placeholder if no image found
+    return "https://res.cloudinary.com/ahossain/image/upload/v1655097002/placeholder_kvepfp.png";
+  };
+
+  // Get product name from details
+  const getProductName = (productId) => {
+    const product = productDetails[productId];
+    if (product) {
+      // Handle different product name structures
+      if (product.name) {
+        return product.name;
+      } else if (product.title) {
+        // Handle possible language object
+        if (typeof product.title === 'object') {
+          return product.title.en || product.title.vi || Object.values(product.title)[0];
+        }
+        return product.title;
+      }
+    }
+    return `SP-${productId}`;
+  };
 
   const { handleErrorNotification } = useError();
   const { handleDisableForDemo } = useDisableForDemo();
@@ -108,23 +212,23 @@ const OrderInvoice = () => {
   // Get current active status
   const getCurrentStatus = (orderStatusDetails) => {
     if (!orderStatusDetails || orderStatusDetails.length === 0) return null;
-    
+
     // Sort by date (newest first)
-    const sortedStatuses = [...orderStatusDetails].sort((a, b) => 
+    const sortedStatuses = [...orderStatusDetails].sort((a, b) =>
       new Date(b.updateAt) - new Date(a.updateAt)
     );
-    
+
     return sortedStatuses[0];
   };
 
-  const currentStatus = data?.data?.orderStatusDetails ? 
+  const currentStatus = data?.data?.orderStatusDetails ?
     getCurrentStatus(data.data.orderStatusDetails) : null;
 
   // Status color mapping
   const getStatusColor = (status) => {
     if (!status) return "warning";
-    
-    switch(status.description) {
+
+    switch (status.description) {
       case "DELIVERED": return "success";
       case "CANCELLED": return "danger";
       case "PAID": return "primary";
@@ -185,12 +289,12 @@ const OrderInvoice = () => {
                 </div>
               </div>
             </div>
-            
+
             <CardBody className="p-4">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center">
-                    <Badge 
+                    <Badge
                       type={getStatusColor(currentStatus)}
                       className="text-md px-3 py-1"
                     >
@@ -201,7 +305,7 @@ const OrderInvoice = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col items-end">
                   <div className="flex gap-2">
                     <ReactToPrint
@@ -214,7 +318,7 @@ const OrderInvoice = () => {
                       content={() => printRef.current}
                       documentTitle={`Đơn hàng-${id}`}
                     />
-                    
+
                     <PDFDownloadLink
                       document={
                         <InvoiceForDownload
@@ -238,7 +342,7 @@ const OrderInvoice = () => {
                         )
                       }
                     </PDFDownloadLink>
-                    
+
                     {globalSetting?.email_to_customer && (
                       <button
                         onClick={() => handleEmailInvoice(data)}
@@ -267,7 +371,7 @@ const OrderInvoice = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mã đơn hàng</p>
@@ -294,7 +398,7 @@ const OrderInvoice = () => {
             <div className="bg-gradient-to-r from-blue-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
               <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Sản phẩm đã đặt</h2>
             </div>
-            
+
             <CardBody className="p-0">
               <TableContainer>
                 <Table>
@@ -308,18 +412,50 @@ const OrderInvoice = () => {
                     </tr>
                   </TableHeader>
                   <TableBody>
-                    {data?.data?.items?.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell className="font-medium">SP-{item.productId}</TableCell>
-                        <TableCell>
-                          {item.size && <span className="inline-block px-2 py-1 mr-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Size: {item.size}</span>}
-                          {item.color && <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Màu: {item.color}</span>}
-                        </TableCell>
-                        <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{formatCurrencyVN(item.price)}</TableCell>
-                      </TableRow>
-                    ))}
+                    {data?.data?.items?.map((item, index) => {
+                      const productImage = getProductImage(item.productId);
+                      const productName = getProductName(item.productId);
+
+                      return (
+                        <TableRow key={index}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                <img
+                                  className="h-10 w-10 rounded-md object-cover border border-gray-200"
+                                  src={productImage}
+                                  alt={productName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://res.cloudinary.com/ahossain/image/upload/v1655097002/placeholder_kvepfp.png";
+                                  }}
+                                />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-gray-800 dark:text-gray-200">
+                                  {loadingProducts ? (
+                                    <span className="inline-block w-24 h-4 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></span>
+                                  ) : (
+                                    productName
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  Mã: {item.productId}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {item.size && <span className="inline-block px-2 py-1 mr-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Size: {item.size}</span>}
+                            {item.color && <span className="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded">Màu: {item.color}</span>}
+                          </TableCell>
+                          <TableCell className="text-center">{item.quantity}</TableCell>
+                          <TableCell className="text-right">{formatCurrencyVN(item.price)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -333,7 +469,7 @@ const OrderInvoice = () => {
               <div className="bg-gradient-to-r from-yellow-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Thông tin thanh toán</h2>
               </div>
-              
+
               <CardBody>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
@@ -366,7 +502,7 @@ const OrderInvoice = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-md font-medium text-gray-600 dark:text-gray-400 mb-2">Phương thức vận chuyển</h3>
                     <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
@@ -385,7 +521,7 @@ const OrderInvoice = () => {
               <div className="bg-gradient-to-r from-purple-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
                 <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Địa chỉ giao hàng</h2>
               </div>
-              
+
               <CardBody>
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div className="flex items-center mb-3">
@@ -404,7 +540,7 @@ const OrderInvoice = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="ml-2 pl-10 border-l-2 border-purple-200 dark:border-purple-700">
                     <p className="text-gray-600 dark:text-gray-400 mb-1">
                       {data?.data?.shippingAddress?.address}
@@ -426,53 +562,92 @@ const OrderInvoice = () => {
             <div className="bg-gradient-to-r from-indigo-50 to-white dark:from-gray-700 dark:to-gray-800 p-4 border-b border-gray-100 dark:border-gray-700">
               <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300">Lịch sử trạng thái đơn hàng</h2>
             </div>
-            
-            <CardBody>
-              <div className="relative">
-                {/* Timeline */}
-                <div className="absolute left-4 top-0 h-full border-l-2 border-gray-200 dark:border-gray-700"></div>
-                
-                <div className="space-y-6">
-                  {data?.data?.orderStatusDetails
-                    ?.sort((a, b) => new Date(b.updateAt) - new Date(a.updateAt))
-                    .map((status, index) => (
-                    <div key={index} className="flex items-start ml-2">
-                      <div className={`absolute -left-1 mt-1.5 rounded-full border-4 border-white dark:border-gray-800 h-10 w-10 flex items-center justify-center ${
-                        index === 0 
-                          ? 'bg-emerald-500 text-white' 
-                          : status.description === "CANCELLED"
-                            ? 'bg-red-400 text-white'
-                            : status.description === "DELIVERED"
-                              ? 'bg-green-400 text-white'
-                              : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                      }`}>
-                        {index === 0 && <span className="text-xs font-bold">Mới</span>}
-                      </div>
-                      <div className="ml-12">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-gray-800 dark:text-gray-200">
-                            {status.statusName}
-                          </h3>
-                          <Badge type={
-                            status.description === "DELIVERED" ? "success" : 
-                            status.description === "CANCELLED" ? "danger" : 
-                            status.description === "PAID" ? "primary" :
-                            "warning"
-                          }>
-                            {status.description}
-                          </Badge>
-                        </div>
-                        <time className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                          {formatDateTimeVN(status.updateAt)}
-                        </time>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          Cập nhật bởi: {status.updatedBy}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+
+            <CardBody className="p-6">
+              {data?.data?.orderStatusDetails && data.data.orderStatusDetails.length > 0 ? (
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-6 md:left-8 top-0 h-full w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+
+                  <div className="space-y-8">
+                    {data.data.orderStatusDetails
+                      .sort((a, b) => new Date(b.updateAt) - new Date(a.updateAt))
+                      .map((status, index) => {
+                        // Determine status color
+                        const statusColor =
+                          status.description === "DELIVERED" ? "bg-green-500" :
+                            status.description === "CANCELLED" ? "bg-red-500" :
+                              status.description === "PAID" ? "bg-blue-500" :
+                                status.description === "PROCESSING" ? "bg-yellow-500" :
+                                  status.description === "OUT_FOR_DELIVERY" ? "bg-purple-500" :
+                                    "bg-gray-400";
+
+                        // Determine badge type
+                        const badgeType =
+                          status.description === "DELIVERED" ? "success" :
+                            status.description === "CANCELLED" ? "danger" :
+                              status.description === "PAID" ? "primary" :
+                                "warning";
+
+                        return (
+                          <div key={index} className="relative pl-8 md:pl-12">
+                            {/* Status circle */}
+                            <div className={`absolute left-0 md:left-2 top-0 mt-1 ${statusColor} rounded-full w-4 h-4 md:w-5 md:h-5 z-10 shadow-md ring-4 ring-white dark:ring-gray-800`}></div>
+
+                            {/* Content */}
+                            <div className={`relative bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border-l-4 ${status.description === "DELIVERED" ? "border-green-500" :
+                              status.description === "CANCELLED" ? "border-red-500" :
+                                status.description === "PAID" ? "border-blue-500" :
+                                  status.description === "PROCESSING" ? "border-yellow-500" :
+                                    status.description === "OUT_FOR_DELIVERY" ? "border-purple-500" :
+                                      "border-gray-400"
+                              }`}>
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200">
+                                      {status.statusName}
+                                    </h3>
+                                    <Badge type={badgeType} className="text-xs">
+                                      {status.description}
+                                    </Badge>
+                                    {index === 0 && (
+                                      <span className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 rounded-full">
+                                        Mới nhất
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                    Cập nhật bởi: <span className="font-medium">{status.updatedBy}</span>
+                                  </p>
+                                </div>
+                                <time className="text-xs text-gray-500 dark:text-gray-400 mt-1 md:mt-0 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
+                                  {formatDateTimeVN(status.updateAt)}
+                                </time>
+                              </div>
+
+                              {status.note && (
+                                <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 border-l-2 border-gray-300 dark:border-gray-600">
+                                  <p className="italic">{status.note}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center p-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900 mb-4">
+                    <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Chưa có lịch sử trạng thái</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mt-2">Đơn hàng chưa có cập nhật trạng thái nào.</p>
+                </div>
+              )}
             </CardBody>
           </Card>
         </div>

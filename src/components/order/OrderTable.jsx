@@ -71,24 +71,24 @@ const OrderTable = ({ orders, fetchOrders }) => {
   // Get badge type based on status
   const getBadgeType = (status) => {
     if (!status) return "neutral";
-    
-    switch(status.toLowerCase()) {
+
+    switch (status.toLowerCase()) {
       case "đã giao":
-      case "delivered": 
+      case "delivered":
         return "success";
       case "đã hủy":
-      case "cancelled": 
+      case "cancelled":
         return "danger";
       case "đã thanh toán":
-      case "paid": 
+      case "paid":
         return "primary";
       case "chờ giao hàng":
-      case "out_for_delivery": 
+      case "out_for_delivery":
         return "warning";
       case "chờ xác nhận":
-      case "pending": 
+      case "pending":
         return "neutral";
-      default: 
+      default:
         return "neutral";
     }
   };
@@ -97,7 +97,7 @@ const OrderTable = ({ orders, fetchOrders }) => {
     <>
       <TableBody className="dark:bg-gray-900">
         {orders?.map((order, i) => (
-          <TableRow 
+          <TableRow
             key={i + 1}
             className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
@@ -125,7 +125,7 @@ const OrderTable = ({ orders, fetchOrders }) => {
             </TableCell>
 
             <TableCell className="text-center">
-              <Badge 
+              <Badge
                 type={getBadgeType(order?.status)}
                 className="px-3 py-1 w-28 justify-center"
               >
@@ -137,8 +137,8 @@ const OrderTable = ({ orders, fetchOrders }) => {
 
             <TableCell className="text-center">
               <div className="flex justify-center">
-                <OrderStatusSelect 
-                  orderId={order._id} 
+                <OrderStatusSelect
+                  orderId={order._id}
                   currentStatus={order.status}
                   onStatusUpdate={handleStatusUpdate}
                   orderStatuses={orderStatuses}
@@ -146,11 +146,9 @@ const OrderTable = ({ orders, fetchOrders }) => {
               </div>
             </TableCell>
 
-            <TableCell className="text-right pr-4">
-              <div className="flex justify-end items-center space-x-1">
-                <PrintReceipt orderId={order._id} />
-
-                <Link 
+            <TableCell className="text-center pr-4">
+              <div className="flex justify-center items-center space-x-1">
+                <Link
                   to={`/order/${order._id}`}
                   className="p-2 text-gray-400 hover:text-emerald-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
