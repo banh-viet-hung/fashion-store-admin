@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 import ReactToPrint from "react-to-print";
 import React, { useContext, useRef, useState, useEffect } from "react";
-import { FiPrinter, FiMail } from "react-icons/fi";
+import { FiPrinter, FiMail, FiDownload } from "react-icons/fi";
 import { IoCloudDownloadOutline } from "react-icons/io5";
 import { Button, Badge } from "@windmill/react-ui";
 import {
@@ -34,7 +34,7 @@ import PageTitle from "@/components/Typography/PageTitle";
 import spinnerLoadingImage from "@/assets/img/spinner.gif";
 import useUtilsFunction from "@/hooks/useUtilsFunction";
 import useDisableForDemo from "@/hooks/useDisableForDemo";
-import InvoiceForDownload from "@/components/invoice/InvoiceForDownload";
+import SimpleInvoiceDownload from "@/components/invoice/SimpleInvoiceDownload";
 
 const OrderInvoice = () => {
   const { t } = useTranslation();
@@ -249,11 +249,12 @@ const OrderInvoice = () => {
         address: data?.data?.shippingAddress?.address,
         city: data?.data?.shippingAddress?.city,
         country: "Việt Nam",
-        zipCode: ""
+        zipCode: "",
+        email: data?.data?.customer?.email || ""
       },
       status: currentStatus?.statusName || "Chờ xác nhận",
       items: data?.data?.items?.map(item => ({
-        itemName: `Sản phẩm #${item.productId}`,
+        itemName: getProductName(item.productId),
         price: item.price,
         quantity: item.quantity,
         size: item.size,
@@ -308,39 +309,38 @@ const OrderInvoice = () => {
 
                 <div className="flex flex-col items-end">
                   <div className="flex gap-2">
-                    <ReactToPrint
-                      trigger={() => (
-                        <button className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-emerald-500 border border-transparent active:bg-emerald-600 hover:bg-emerald-600">
-                          <FiPrinter className="mr-1" />
-                          In
-                        </button>
-                      )}
-                      content={() => printRef.current}
-                      documentTitle={`Đơn hàng-${id}`}
-                    />
-
                     <PDFDownloadLink
                       document={
-                        <InvoiceForDownload
-                          t={t}
+                        <SimpleInvoiceDownload
                           data={prepareDocumentData()}
-                          currency={currency}
-                          getNumberTwo={getNumberTwo}
-                          showDateFormat={showDateFormat}
                         />
                       }
-                      fileName={`Hóa đơn-${id}`}
+                      fileName={`Hoa-don-${id}.pdf`}
                     >
-                      {({ blob, url, loading, error }) =>
-                        loading ? (
-                          "..."
-                        ) : (
-                          <button className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-teal-500 border border-transparent active:bg-teal-600 hover:bg-teal-600">
-                            <IoCloudDownloadOutline className="mr-1" />
-                            Tải xuống
-                          </button>
-                        )
-                      }
+                      {({ blob, url, loading, error }) => (
+                        <button
+                          className="flex items-center text-xs md:text-sm leading-5 transition-colors duration-150 font-medium focus:outline-none px-3 py-1 rounded-md text-white bg-blue-600 border border-transparent active:bg-blue-700 hover:bg-blue-700"
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <img
+                                src={spinnerLoadingImage}
+                                alt="Loading"
+                                width={16}
+                                height={16}
+                                className="mr-1"
+                              />
+                              Đang xử lý...
+                            </>
+                          ) : (
+                            <>
+                              <FiDownload className="mr-1" />
+                              Xuất hóa đơn
+                            </>
+                          )}
+                        </button>
+                      )}
                     </PDFDownloadLink>
 
                     {globalSetting?.email_to_customer && (
