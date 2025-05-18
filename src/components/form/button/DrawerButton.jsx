@@ -21,7 +21,7 @@ const DrawerButton = ({ id, title, isSubmitting, zIndex = "z-10" }) => {
             className="h-12 bg-white w-full text-red-500 hover:bg-red-50 hover:border-red-100 hover:text-red-600 dark:bg-gray-700 dark:border-gray-700 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-red-700"
             layout="outline"
           >
-            {t("Cancel")}
+            {t("Hủy")}
           </Button>
         </div>
 

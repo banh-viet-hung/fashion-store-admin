@@ -161,7 +161,7 @@ const Coupons = () => {
     <>
       {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
-        <PageTitle>{t("Quản lý Coupons")}</PageTitle>
+        <PageTitle>{t("Quản lý Mã giảm giá")}</PageTitle>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => isCheck?.length > 0 && handleDeleteMany(isCheck)}
@@ -202,7 +202,7 @@ const Coupons = () => {
             className="flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600"
           >
             <FiPlus className="h-4 w-4" />
-            <span className="hidden md:inline-block">{t("Thêm coupon")}</span>
+            <span className="hidden md:inline-block">{t("Thêm Mã giảm giá")}</span>
           </Button>
         </div>
       </div>

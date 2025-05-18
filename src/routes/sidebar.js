@@ -9,13 +9,6 @@ import {
   FiTarget,
 } from "react-icons/fi";
 
-/**
- * ⚠ These are used just to render the Sidebar!
- * You can include any link here, local or external.
- *
- * If you're looking to actual Router routes, go to
- * `routes/index.js`
- */
 const sidebar = [
   {
     path: "/dashboard", // the url
@@ -35,13 +28,9 @@ const sidebar = [
         path: "/categories",
         name: "Danh mục",
       },
-      // {
-      //   path: "/attributes",
-      //   name: "Attributes",
-      // },
       {
         path: "/coupons",
-        name: "Coupons",
+        name: "Mã giảm giá",
       },
     ],
   },
