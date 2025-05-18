@@ -28,6 +28,8 @@ import BulkActionDrawer from "@/components/drawer/BulkActionDrawer";
 import MainDrawer from "@/components/drawer/MainDrawer";
 import CouponDrawer from "@/components/drawer/CouponDrawer";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import CheckBox from "@/components/form/others/CheckBox";
 import CouponTable from "@/components/coupon/CouponTable";
 import NotFound from "@/components/table/NotFound";
@@ -37,13 +39,16 @@ const Coupons = () => {
   const { t } = useTranslation();
   const { toggleDrawer, lang } = useContext(SidebarContext);
   const {
-    currentPage,
+    couponPage,
     searchText,
     resultsPerPage,
     handleChangePage,
     setCurrentPage,
     setIsUpdate,
     isUpdate,
+    pageLoading,
+    setPageLoading,
+    setCurrentPageType,
   } = useContext(SidebarContext);
 
   const [isCheckAll, setIsCheckAll] = useState(false);
@@ -59,11 +64,16 @@ const Coupons = () => {
 
   const { allId, serviceId, handleDeleteMany } = useToggleDrawer();
 
+  // Set the current page type when component mounts
+  useEffect(() => {
+    setCurrentPageType("coupon");
+  }, [setCurrentPageType]);
+
   // Define async function for useAsync hook
   const asyncFunction = async ({ cancelToken }) => {
     try {
       const filters = {
-        page: currentPage,
+        page: couponPage,
         size: pagination.size,
         code: searchCode || undefined
       };
@@ -86,7 +96,14 @@ const Coupons = () => {
 
   // Use the useAsync hook for data fetching
   const { data, loading, error } = useAsync(asyncFunction);
-  
+
+  // Turn off page loading after data is fetched
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
+
   // Extract coupons from response
   const coupons = data?.data?.content || [];
 
@@ -95,12 +112,6 @@ const Coupons = () => {
     setCurrentPage(1);
     setIsUpdate(true);
   }, [setCurrentPage, setIsUpdate]);
-
-  // Custom handler for page changes
-  const handleCouponPageChange = (p) => {
-    setCurrentPage(p);
-    setIsUpdate(true);
-  };
 
   const handleSelectAll = () => {
     setIsCheckAll(!isCheckAll);
@@ -140,14 +151,15 @@ const Coupons = () => {
   // Generate filter summary text
   const getFilterSummary = () => {
     const summaries = [];
-    
+
     if (searchCode) summaries.push(`Mã giảm giá: ${searchCode}`);
-    
+
     return summaries;
   };
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý Coupons")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -271,10 +283,10 @@ const Coupons = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="md:col-span-8 flex items-end gap-3">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="h-10 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg flex items-center gap-2 transition-all duration-200 px-5 w-32 justify-center shadow-sm hover:shadow-md font-medium"
                     >
                       <IoSearch className="h-4 w-4" />
@@ -340,13 +352,16 @@ const Coupons = () => {
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {coupons?.length || 0} trên {pagination.totalElements || 0} coupons
-                  </div>
+                  <PaginationInfo
+                    currentPage={couponPage}
+                    itemsPerPage={pagination.size}
+                    totalItems={pagination.totalElements || 0}
+                    itemLabel="mã giảm giá"
+                  />
                   <Pagination
                     totalResults={pagination.totalElements}
                     resultsPerPage={pagination.size}
-                    onChange={handleCouponPageChange}
+                    onChange={(p) => handleChangePage(p, "coupon")}
                     label="Table navigation"
                   />
                 </div>

@@ -18,6 +18,8 @@ import { IoClose } from "react-icons/io5";
 
 import CustomerTable from "@/components/customer/CustomerTable";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import NotFound from "@/components/table/NotFound";
 import PageTitle from "@/components/Typography/PageTitle";
 import useAsync from "@/hooks/useAsync";
@@ -28,26 +30,42 @@ import { SidebarContext } from "@/context/SidebarContext";
 const Customers = () => {
   const { t } = useTranslation();
   const {
-    currentPage,
+    customerPage,
     setCurrentPage,
     searchText,
     setSearchText,
     resultsPerPage,
     setIsUpdate,
+    pageLoading,
+    handleChangePage,
+    setPageLoading,
+    setCurrentPageType,
   } = useContext(SidebarContext);
-  
+
   // Trạng thái mới cho bộ lọc
   const [showFilters, setShowFilters] = useState(false);
   const userRef = useRef(null);
 
+  // Set the current page type when component mounts
+  useEffect(() => {
+    setCurrentPageType("customer");
+  }, [setCurrentPageType]);
+
   const asyncFunction = async ({ cancelToken }) => {
-    const page = currentPage;
+    const page = customerPage;
     const size = 3;
     const email = searchText || "";
     return CustomerServices.getAllCustomers({ page, size, email, cancelToken });
   };
 
   const { data, loading, error } = useAsync(asyncFunction);
+
+  // Turn off page loading after data is fetched
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
 
   // Reset trạng thái khi vào trang Customer
   useEffect(() => {
@@ -70,11 +88,6 @@ const Customers = () => {
     if (userRef.current) userRef.current.value = "";
   };
 
-  const handleChangePage = (p) => {
-    setCurrentPage(p);
-    setIsUpdate(true); // Buộc useAsync gọi lại API khi đổi trang
-  };
-
   // Hiển thị/ẩn bộ lọc
   const toggleFilters = () => {
     setShowFilters(!showFilters);
@@ -87,6 +100,7 @@ const Customers = () => {
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý khách hàng")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -221,13 +235,16 @@ const Customers = () => {
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {data.data.content.length} trên {data.data.totalElements} khách hàng
-                  </div>
+                  <PaginationInfo
+                    currentPage={customerPage}
+                    itemsPerPage={data.data.size}
+                    totalItems={data.data.totalElements}
+                    itemLabel="khách hàng"
+                  />
                   <Pagination
                     totalResults={data.data.totalElements}
                     resultsPerPage={data.data.size}
-                    onChange={handleChangePage}
+                    onChange={(p) => handleChangePage(p, "customer")}
                     label="Table navigation"
                   />
                 </div>

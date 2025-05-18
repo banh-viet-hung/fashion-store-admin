@@ -35,6 +35,8 @@ import useProductFilter from "@/hooks/useProductFilter";
 import DeleteModal from "@/components/modal/DeleteModal";
 import BulkActionDrawer from "@/components/drawer/BulkActionDrawer";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import SelectCategory from "@/components/form/selectOption/SelectCategory";
 import AnimatedContent from "@/components/common/AnimatedContent";
 
@@ -45,7 +47,7 @@ const Products = () => {
   const {
     toggleDrawer,
     lang,
-    currentPage,
+    productPage,
     handleChangePage,
     searchText,
     setSearchText,
@@ -62,17 +64,32 @@ const Products = () => {
     isDrawerOpen,
     setIsUpdate,
     isUpdate,
+    pageLoading,
+    setPageLoading,
+    setCurrentPageType,
   } = useContext(SidebarContext);
+
+  // Set the current page type when component mounts
+  useEffect(() => {
+    setCurrentPageType("product");
+  }, [setCurrentPageType]);
 
   const { data, loading, error } = useAsync(() =>
     ProductServices.getAllProducts({
-      page: currentPage,
+      page: productPage,
       limit: limitData,
       category: category,
       title: searchText,
       status: sortedField,
     })
   );
+
+  // Turn off page loading after data is fetched
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
 
   const [isCheckAll, setIsCheckAll] = useState(false);
   const [isCheck, setIsCheck] = useState([]);
@@ -132,6 +149,7 @@ const Products = () => {
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý sản phẩm")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -349,13 +367,16 @@ const Products = () => {
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {data?.content?.length || 0} trên {data?.totalElements || 0} sản phẩm
-                  </div>
+                  <PaginationInfo
+                    currentPage={productPage}
+                    itemsPerPage={limitData}
+                    totalItems={data?.totalElements || 0}
+                    itemLabel="sản phẩm"
+                  />
                   <Pagination
                     totalResults={data?.totalElements}
                     resultsPerPage={limitData}
-                    onChange={handleChangePage}
+                    onChange={(p) => handleChangePage(p, "product")}
                     label="Product Page Navigation"
                   />
                 </div>

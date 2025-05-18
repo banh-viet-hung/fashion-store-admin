@@ -17,7 +17,8 @@ import useGetCData from "@/hooks/useGetCData";
 const SidebarContent = () => {
   const { t } = useTranslation();
   const { mode } = useContext(WindmillContext);
-  const { dispatch } = useContext(AdminContext);
+  const { dispatch, state } = useContext(AdminContext);
+  const { adminInfo } = state;
   const { accessList } = useGetCData();
 
   const handleLogOut = () => {
@@ -47,7 +48,14 @@ const SidebarContent = () => {
   //   })
   //   .filter(Boolean);
 
-  const updatedSidebar = sidebar;
+  // Lọc các mục trong sidebar dựa trên role
+  const updatedSidebar = sidebar.filter(route => {
+    // Nếu người dùng có role là STAFF, ẩn mục "Nhân viên" (our-staff)
+    if (adminInfo?.role === "STAFF" && route.path === "/our-staff") {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <div className="py-4 text-gray-500 dark:text-gray-400">

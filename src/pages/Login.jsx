@@ -56,7 +56,7 @@ const Login = () => {
                   />
                   <Error errorName={errors.email} />
                   <div className="mt-6"></div>
-                  <LabelArea label="Password" />
+                  <LabelArea label="Mật khẩu" />
                   <InputArea
                     required={true}
                     register={register}
@@ -86,17 +86,7 @@ const Login = () => {
                       {t("Đăng nhập")}
                     </Button>
                   )}
-                  <hr className="my-10" />
                 </form>
-
-                <p className="mt-4">
-                  <Link
-                    className="text-sm font-medium text-emerald-500 dark:text-emerald-400 hover:underline"
-                    to="/forgot-password"
-                  >
-                    {t("Quên mật khẩu?")}
-                  </Link>
-                </p>
               </div>
             </main>
           </div>

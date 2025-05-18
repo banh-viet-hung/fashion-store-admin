@@ -29,13 +29,15 @@ import PageTitle from "@/components/Typography/PageTitle";
 import { SidebarContext } from "@/context/SidebarContext";
 import OrderTable from "@/components/order/OrderTable";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import spinnerLoadingImage from "@/assets/img/spinner.gif";
 import useUtilsFunction from "@/hooks/useUtilsFunction";
 import AnimatedContent from "@/components/common/AnimatedContent";
 
 const Orders = () => {
   const {
-    currentPage,
+    orderPage,
     searchText,
     searchRef,
     resultsPerPage,
@@ -43,6 +45,9 @@ const Orders = () => {
     setCurrentPage,
     setIsUpdate,
     isUpdate,
+    pageLoading,
+    setPageLoading,
+    setCurrentPageType,
   } = useContext(SidebarContext);
 
   const { t } = useTranslation();
@@ -66,6 +71,11 @@ const Orders = () => {
     totalElements: 0
   });
 
+  // Set the current page type when component mounts
+  useEffect(() => {
+    setCurrentPageType("order");
+  }, [setCurrentPageType]);
+
   // Format date to MM/dd/yyyy
   const formatDate = (date) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -79,7 +89,7 @@ const Orders = () => {
     try {
       const formattedFilters = {
         ...filters,
-        page: currentPage,
+        page: orderPage,
         size: pagination.size,
         startDate: filters.startDate ? formatDate(filters.startDate) : undefined,
         endDate: filters.endDate ? formatDate(filters.endDate) : undefined
@@ -103,6 +113,13 @@ const Orders = () => {
 
   // Use the useAsync hook for data fetching
   const { data, loading, error } = useAsync(asyncFunction);
+
+  // Turn off page loading after data is fetched
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
 
   // Tìm tên phương thức thanh toán dựa trên mã
   const findMethodNameByCode = (methods, code) => {
@@ -146,12 +163,6 @@ const Orders = () => {
     setCurrentPage(1); // Reset currentPage về 1
     setIsUpdate(true); // Kích hoạt useAsync gọi lại API với trạng thái mới
   }, [setCurrentPage, setIsUpdate]);
-
-  // Custom handler for page changes
-  const handleOrderPageChange = (p) => {
-    setCurrentPage(p);
-    setIsUpdate(true);
-  };
 
   useEffect(() => {
     const fetchMethods = async () => {
@@ -278,6 +289,7 @@ const Orders = () => {
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý đơn hàng")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -521,13 +533,16 @@ const Orders = () => {
 
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {orders.length} trên {pagination.totalElements} đơn hàng
-                  </div>
+                  <PaginationInfo
+                    currentPage={orderPage}
+                    itemsPerPage={pagination.size}
+                    totalItems={pagination.totalElements}
+                    itemLabel="đơn hàng"
+                  />
                   <Pagination
                     totalResults={pagination.totalElements}
                     resultsPerPage={pagination.size}
-                    onChange={handleOrderPageChange}
+                    onChange={(p) => handleChangePage(p, "order")}
                     label="Table navigation"
                   />
                 </div>

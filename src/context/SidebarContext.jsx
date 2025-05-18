@@ -29,6 +29,14 @@ export const SidebarProvider = ({ children }) => {
   const [time, setTime] = useState("");
   const [sortedField, setSortedField] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  // Add separate page states for each section
+  const [productPage, setProductPage] = useState(1);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [couponPage, setCouponPage] = useState(1);
+  const [customerPage, setCustomerPage] = useState(1);
+  const [orderPage, setOrderPage] = useState(1);
+  const [staffPage, setStaffPage] = useState(1);
+
   const [searchText, setSearchText] = useState(null);
   const [invoice, setInvoice] = useState(null);
   const [zone, setZone] = useState("");
@@ -40,11 +48,16 @@ export const SidebarProvider = ({ children }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [windowDimension, setWindowDimension] = useState(window.innerWidth);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
   const [navBar, setNavBar] = useState(true);
   const [drawerType, setDrawerType] = useState("add");
   const [productId, setProductId] = useState(null);
   const { i18n } = useTranslation();
   const [tabIndex, setTabIndex] = useState(0);
+
+  // Track the current active page type
+  const [currentPageType, setCurrentPageType] = useState("product");
+
   const { data: globalSetting } = useQuery({
     queryKey: ["globalSetting"],
     queryFn: async () => await SettingServices.getGlobalSetting(),
@@ -91,8 +104,56 @@ export const SidebarProvider = ({ children }) => {
     setCurrLang(value);
   };
 
-  const handleChangePage = (p) => {
+  // Updated version that uses the appropriate page state based on the page type
+  const handleChangePage = (p, pageType = currentPageType) => {
+    setPageLoading(true);
+
+    // Update the appropriate page state based on page type
+    switch (pageType) {
+      case "product":
+        setProductPage(p);
+        break;
+      case "category":
+        setCategoryPage(p);
+        break;
+      case "coupon":
+        setCouponPage(p);
+        break;
+      case "customer":
+        setCustomerPage(p);
+        break;
+      case "order":
+        setOrderPage(p);
+        break;
+      case "staff":
+        setStaffPage(p);
+        break;
+      default:
+        setCurrentPage(p); // Fallback to the original state
+    }
+
+    // Also update the general currentPage for backward compatibility
     setCurrentPage(p);
+  };
+
+  // Helper function to get the current page for a specific page type
+  const getPageByType = (pageType) => {
+    switch (pageType) {
+      case "product":
+        return productPage;
+      case "category":
+        return categoryPage;
+      case "coupon":
+        return couponPage;
+      case "customer":
+        return customerPage;
+      case "order":
+        return orderPage;
+      case "staff":
+        return staffPage;
+      default:
+        return currentPage;
+    }
   };
 
   const handleSubmitForAll = (e) => {
@@ -186,6 +247,16 @@ export const SidebarProvider = ({ children }) => {
         currentPage,
         setCurrentPage,
         handleChangePage,
+        // Add new page-specific states and getters
+        productPage,
+        categoryPage,
+        couponPage,
+        customerPage,
+        orderPage,
+        staffPage,
+        getPageByType,
+        currentPageType,
+        setCurrentPageType,
         searchText,
         setSearchText,
         category,
@@ -212,6 +283,8 @@ export const SidebarProvider = ({ children }) => {
         setEndDate,
         loading,
         setLoading,
+        pageLoading,
+        setPageLoading,
         invoice,
         setInvoice,
         invoiceRef,

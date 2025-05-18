@@ -21,6 +21,8 @@ import useAsync from "@/hooks/useAsync";
 import MainDrawer from "@/components/drawer/MainDrawer";
 import AddStaffDrawer from "@/components/drawer/AddStaffDrawer";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import StaffTable from "@/components/staff/StaffTable";
 import NotFound from "@/components/table/NotFound";
 import PageTitle from "@/components/Typography/PageTitle";
@@ -35,14 +37,23 @@ const Staff = () => {
   const {
     toggleDrawer,
     lang,
-    currentPage,
+    staffPage,
     setCurrentPage,
     setIsUpdate,
     searchText,
     setSearchText,
     isDrawerOpen,
+    pageLoading,
+    handleChangePage,
+    setPageLoading,
+    setCurrentPageType,
   } = useContext(SidebarContext);
   const { t } = useTranslation();
+
+  // Set the current page type when component mounts
+  useEffect(() => {
+    setCurrentPageType("staff");
+  }, [setCurrentPageType]);
 
   // Trạng thái cục bộ
   const [selectedRole, setSelectedRole] = useState("STAFF");
@@ -57,7 +68,7 @@ const Staff = () => {
   // Hàm gọi API thông qua useAsync
   const asyncFunction = async ({ cancelToken }) => {
     return AdminServices.getAllStaff({
-      page: currentPage,
+      page: staffPage,
       size: 3,
       email: searchText,
       roleName: selectedRole,
@@ -66,6 +77,13 @@ const Staff = () => {
   };
 
   const { data, loading, error } = useAsync(asyncFunction);
+
+  // Turn off page loading after data is fetched
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
 
   // Reset trạng thái khi vào trang Staff
   useEffect(() => {
@@ -92,12 +110,6 @@ const Staff = () => {
     if (userRef.current) userRef.current.value = "";
   };
 
-  // Xử lý thay đổi trang
-  const handleChangePage = (p) => {
-    setCurrentPage(p);
-    setIsUpdate(true); // Buộc useAsync gọi lại API khi đổi trang
-  };
-
   const handleAddStaffClick = () => {
     toggleDrawer();
   };
@@ -114,6 +126,7 @@ const Staff = () => {
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý nhân viên")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -294,13 +307,16 @@ const Staff = () => {
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {data.data.content.length} trên {data.data.totalElements} nhân viên
-                  </div>
+                  <PaginationInfo
+                    currentPage={staffPage}
+                    itemsPerPage={data.data.size}
+                    totalItems={data.data.totalElements}
+                    itemLabel="nhân viên"
+                  />
                   <Pagination
                     totalResults={data.data.totalElements}
                     resultsPerPage={data.data.size}
-                    onChange={handleChangePage}
+                    onChange={(p) => handleChangePage(p, "staff")}
                     label="Table navigation"
                   />
                 </div>

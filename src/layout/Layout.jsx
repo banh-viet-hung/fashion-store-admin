@@ -8,6 +8,7 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import { SidebarContext } from "@/context/SidebarContext";
 import ThemeSuspense from "@/components/theme/ThemeSuspense";
 import { routes } from "@/routes";
+import RoleBasedRoute from "@/components/login/RoleBasedRoute";
 const Page404 = lazy(() => import("@/pages/404"));
 
 const Layout = () => {
@@ -31,9 +32,8 @@ const Layout = () => {
         </div>
       )}
       <div
-        className={`flex h-screen bg-gray-50 dark:bg-gray-900 ${
-          isSidebarOpen && "overflow-hidden"
-        }`}
+        className={`flex h-screen bg-gray-50 dark:bg-gray-900 ${isSidebarOpen && "overflow-hidden"
+          }`}
       >
         {navBar && <Sidebar />}
 
@@ -43,6 +43,18 @@ const Layout = () => {
             <Suspense fallback={<ThemeSuspense />}>
               <Switch>
                 {routes.map((route, i) => {
+                  if (route.path === "/our-staff") {
+                    return (
+                      <RoleBasedRoute
+                        key={i}
+                        exact={true}
+                        path={route.path}
+                        component={route.component}
+                        allowedRoles={["ADMIN"]}
+                      />
+                    );
+                  }
+
                   return route.component ? (
                     <Route
                       key={i}

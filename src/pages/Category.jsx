@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -23,22 +23,34 @@ import MainDrawer from "@/components/drawer/MainDrawer";
 import CategoryDrawer from "@/components/drawer/CategoryDrawer";
 import PageTitle from "@/components/Typography/PageTitle";
 import TableLoading from "@/components/preloader/TableLoading";
+import PaginationLoading from "@/components/preloader/PaginationLoading";
+import PaginationInfo from "@/components/pagination/PaginationInfo";
 import CheckBox from "@/components/form/others/CheckBox";
 import CategoryTable from "@/components/category/CategoryTable";
 import NotFound from "@/components/table/NotFound";
 import AnimatedContent from "@/components/common/AnimatedContent";
 
 const Category = () => {
-  const { toggleDrawer, lang, currentPage, handleChangePage } =
+  const { toggleDrawer, lang, categoryPage, handleChangePage, pageLoading, setPageLoading, setCurrentPageType } =
     useContext(SidebarContext);
   const { t } = useTranslation();
   const { title, handleDeleteMany, allId, serviceId } = useToggleDrawer();
 
   const pageSize = 10;
 
+  useEffect(() => {
+    setCurrentPageType("category");
+  }, [setCurrentPageType]);
+
   const { data, loading, error } = useAsync(() =>
-    CategoryServices.getAllCategory(currentPage - 1, pageSize)
+    CategoryServices.getAllCategory(categoryPage - 1, pageSize)
   );
+
+  useEffect(() => {
+    if (data && !loading) {
+      setPageLoading(false);
+    }
+  }, [data, loading, setPageLoading]);
 
   const categories = data?._embedded?.category || [];
   const totalElements = data?.page?.totalElements || 0;
@@ -55,6 +67,7 @@ const Category = () => {
 
   return (
     <>
+      {pageLoading && <PaginationLoading />}
       <div className="flex justify-between items-center mb-4">
         <PageTitle>{t("Quản lý danh mục sản phẩm")}</PageTitle>
         <div className="flex items-center gap-2">
@@ -130,13 +143,16 @@ const Category = () => {
               </Table>
               <TableFooter>
                 <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    Hiển thị {categories.length || 0} trên {totalElements || 0} danh mục
-                  </div>
+                  <PaginationInfo
+                    currentPage={categoryPage}
+                    itemsPerPage={pageSize}
+                    totalItems={totalElements || 0}
+                    itemLabel="danh mục"
+                  />
                   <Pagination
                     totalResults={totalElements}
                     resultsPerPage={pageSize}
-                    onChange={handleChangePage}
+                    onChange={(p) => handleChangePage(p, "category")}
                     label="Table navigation"
                   />
                 </div>

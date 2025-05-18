@@ -20,7 +20,7 @@ const sidebar = [
   {
     path: "/dashboard", // the url
     icon: FiGrid, // icon
-    name: "Dashboard", // name that appear in Sidebar
+    name: "Trang tổng quan", // name that appear in Sidebar
   },
 
   {
