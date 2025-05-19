@@ -1,19 +1,15 @@
 import {
   Card,
   CardBody,
-  Pagination,
+  Select,
+  Button,
   Table,
   TableCell,
   TableContainer,
-  TableFooter,
   TableHeader,
   WindmillContext,
   Badge,
-  Select,
-  Button,
-  Label,
-  Tab,
-  Tabs
+  Alert
 } from "@windmill/react-ui";
 import dayjs from "dayjs";
 import { useContext, useEffect, useState } from "react";
@@ -35,33 +31,37 @@ import {
   FiPackage,
   FiPieChart,
   FiGrid,
-  FiCreditCard,
-  FiPercent
+  FiPercent,
+  FiArrowUp,
+  FiArrowDown,
+  FiLock
 } from "react-icons/fi";
-import { ImCreditCard } from "react-icons/im";
 import Skeleton from "react-loading-skeleton";
 
 //internal import
-import useAsync from "@/hooks/useAsync";
 import LineChart from "@/components/chart/LineChart/LineChart";
 import PieChart from "@/components/chart/Pie/PieChart";
 import BarChart from "@/components/chart/Bar/BarChart";
 import CardItem from "@/components/dashboard/CardItem";
 import CardItemTwo from "@/components/dashboard/CardItemTwo";
 import ChartCard from "@/components/chart/ChartCard";
-import OrderTable from "@/components/order/OrderTable";
 import TableLoading from "@/components/preloader/TableLoading";
 import NotFound from "@/components/table/NotFound";
 import PageTitle from "@/components/Typography/PageTitle";
 import { SidebarContext } from "@/context/SidebarContext";
 import DashboardService from "@/services/DashboardService";
-import OrderServices from "@/services/OrderServices";
 import AnimatedContent from "@/components/common/AnimatedContent";
+import { AdminContext } from "@/context/AdminContext";
 
 const Dashboard = () => {
   const { t } = useTranslation();
   const { mode } = useContext(WindmillContext);
-  const { currentPage, handleChangePage } = useContext(SidebarContext);
+  const { currentPage } = useContext(SidebarContext);
+  const { state } = useContext(AdminContext);
+  const { adminInfo } = state;
+
+  // Check if user is ADMIN or STAFF
+  const isAdmin = adminInfo?.role === "Admin" || adminInfo?.role === "Super Admin" || adminInfo?.role === "ADMIN";
 
   // Date range states (global filter)
   const [startDate, setStartDate] = useState(dayjs().subtract(30, 'day').format('YYYY-MM-DD'));
@@ -113,14 +113,10 @@ const Dashboard = () => {
   const [isFilteringLowStock, setIsFilteringLowStock] = useState(false);
 
   // Add view state for category sales
-  const [categorySalesView, setCategorySalesView] = useState('chart'); // 'chart' or 'table'
+  const [categorySalesView, setCategorySalesView] = useState('chart');
 
-  // Recent orders
-  const { data: dashboardRecentOrder, loading: loadingRecentOrder } = useAsync(
-    () => OrderServices.getDashboardRecentOrder({ page: currentPage, limit: 8 })
-  );
-
-  const { dataTable, serviceData } = useAsync(dashboardRecentOrder?.orders || []);
+  // Add view state for order growth
+  const [orderGrowthView, setOrderGrowthView] = useState('chart');
 
   // Fetch data from APIs
   const fetchDashboardData = async () => {
@@ -351,455 +347,518 @@ const Dashboard = () => {
     }));
   };
 
+  const prepareOrderGrowthChartData = () => {
+    return orderTrends.map(item => ({
+      date: dayjs(item.date).format('DD/MM'),
+      orders: item.orderCount,
+      growth: item.growth
+    }));
+  };
+
+  const calculateAverageGrowth = () => {
+    if (!orderTrends || orderTrends.length === 0) return 0;
+
+    const validGrowthEntries = orderTrends.filter(item =>
+      item.orderCount > 0 || item.growth !== 0
+    );
+
+    if (validGrowthEntries.length === 0) return 0;
+
+    const sum = validGrowthEntries.reduce((acc, item) => acc + item.growth, 0);
+    return sum / validGrowthEntries.length;
+  };
+
+  const getTotalOrders = () => {
+    if (!orderTrends || orderTrends.length === 0) return 0;
+    return orderTrends.reduce((acc, item) => acc + item.orderCount, 0);
+  };
+
   return (
     <>
       <PageTitle>{"Phân tích"}</PageTitle>
 
+      {!isAdmin && (
+        <div className="mb-4">
+          <Alert type="warning" className="flex items-center">
+            <div className="mr-3">
+              <FiLock className="w-6 h-6" />
+            </div>
+            <span>
+              Bạn không có quyền xem chi tiết thông tin phân tích.
+            </span>
+          </Alert>
+        </div>
+      )}
+
       <AnimatedContent>
-        {/* Dashboard Summary Section */}
-        <div className="grid gap-4 mb-8 md:grid-cols-2 xl:grid-cols-3">
-          <CardItem
-            title="Tổng đơn hàng"
-            Icon={FiShoppingCart}
-            loading={isLoadingSummary}
-            quantity={dashboardSummary?.totalOrders || 0}
-            className="text-orange-600 dark:text-orange-100 bg-orange-100 dark:bg-orange-500"
-          />
-          <CardItem
-            title="Tổng doanh thu"
-            Icon={FiDollarSign}
-            loading={isLoadingSummary}
-            quantity={formatCurrency(dashboardSummary?.totalRevenue || 0)}
-            className="text-emerald-600 dark:text-emerald-100 bg-emerald-100 dark:bg-emerald-500"
-          />
-          <CardItem
-            title="Tổng sản phẩm"
-            Icon={FiBarChart2}
-            loading={isLoadingSummary}
-            quantity={dashboardSummary?.totalProducts || 0}
-            className="text-blue-600 dark:text-blue-100 bg-blue-100 dark:bg-blue-500"
-          />
-          <CardItem
-            title="Tổng khách hàng"
-            Icon={FiCalendar}
-            loading={isLoadingSummary}
-            quantity={dashboardSummary?.totalCustomers || 0}
-            className="text-purple-600 dark:text-purple-100 bg-purple-100 dark:bg-purple-500"
-          />
-          <CardItem
-            title="Giá trị trung bình đơn hàng"
-            Icon={FiTrendingUp}
-            loading={isLoadingSummary}
-            quantity={formatCurrency(dashboardSummary?.averageOrderValue || 0)}
-            className="text-indigo-600 dark:text-indigo-100 bg-indigo-100 dark:bg-indigo-500"
-          />
-          <CardItem
-            title="Đơn hàng đang chờ xử lý"
-            Icon={FiClock}
-            loading={isLoadingSummary}
-            quantity={dashboardSummary?.pendingOrders || 0}
-            className="text-amber-600 dark:text-amber-100 bg-amber-100 dark:bg-amber-500"
-          />
-        </div>
-
-        {/* Global Date range filter section */}
-        <Card className="mb-4">
-          <CardBody>
-            <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-              <div className="flex items-center gap-2 text-lg font-medium text-gray-700 dark:text-gray-300">
-                <FiFilter className="w-5 h-5" />
-                <span>Lọc dữ liệu</span>
-              </div>
-              <div className="w-full md:w-auto flex flex-col md:flex-row gap-3 items-center">
-                <label className="font-medium">Khoảng thời gian:</label>
-                <input
-                  type="date"
-                  className="px-3 py-2 border rounded-md dark:bg-gray-800"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-                <span>-</span>
-                <input
-                  type="date"
-                  className="px-3 py-2 border rounded-md dark:bg-gray-800"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
-                <Button onClick={handleApplyFilters}>
-                  Áp dụng
-                </Button>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        {/* Order status statistics */}
-        <div className="grid gap-4 mb-8 md:grid-cols-2 xl:grid-cols-4">
-          {orderStatusData.map((status) => (
+        <div className={!isAdmin ? "filter blur-sm pointer-events-none select-none" : ""}>
+          {/* Dashboard Summary Section */}
+          <div className="grid gap-4 mb-8 md:grid-cols-2 xl:grid-cols-3">
             <CardItem
-              key={status.statusCode}
-              title={status.statusName}
-              Icon={
-                status.statusCode === 'PENDING' ? FiRefreshCw :
-                  status.statusCode === 'OUT_FOR_DELIVERY' ? FiTruck :
-                    status.statusCode === 'DELIVERED' ? FiCheck :
-                      FiShoppingCart
-              }
-              loading={isLoadingOrderStatus}
-              quantity={status.count}
-              secondValue={`${status.percentage.toFixed(1)}%`}
-              className={
-                status.statusCode === 'DELIVERED' ? "text-emerald-600 dark:text-emerald-100 bg-emerald-100 dark:bg-emerald-500" :
-                  status.statusCode === 'PENDING' ? "text-orange-600 dark:text-orange-100 bg-orange-100 dark:bg-orange-500" :
-                    status.statusCode === 'CANCELLED' ? "text-red-600 dark:text-red-100 bg-red-100 dark:bg-red-500" :
-                      "text-blue-600 dark:text-blue-100 bg-blue-100 dark:bg-blue-500"
-              }
+              title="Tổng đơn hàng"
+              Icon={FiShoppingCart}
+              loading={isLoadingSummary}
+              quantity={dashboardSummary?.totalOrders || 0}
+              className="text-orange-600 dark:text-orange-100 bg-orange-100 dark:bg-orange-500"
             />
-          ))}
-        </div>
+            <CardItem
+              title="Tổng doanh thu"
+              Icon={FiDollarSign}
+              loading={isLoadingSummary}
+              quantity={formatCurrency(dashboardSummary?.totalRevenue || 0)}
+              className="text-emerald-600 dark:text-emerald-100 bg-emerald-100 dark:bg-emerald-500"
+            />
+            <CardItem
+              title="Tổng sản phẩm"
+              Icon={FiBarChart2}
+              loading={isLoadingSummary}
+              quantity={dashboardSummary?.totalProducts || 0}
+              className="text-blue-600 dark:text-blue-100 bg-blue-100 dark:bg-blue-500"
+            />
+            <CardItem
+              title="Tổng khách hàng"
+              Icon={FiCalendar}
+              loading={isLoadingSummary}
+              quantity={dashboardSummary?.totalCustomers || 0}
+              className="text-purple-600 dark:text-purple-100 bg-purple-100 dark:bg-purple-500"
+            />
+            <CardItem
+              title="Giá trị trung bình đơn hàng"
+              Icon={FiTrendingUp}
+              loading={isLoadingSummary}
+              quantity={formatCurrency(dashboardSummary?.averageOrderValue || 0)}
+              className="text-indigo-600 dark:text-indigo-100 bg-indigo-100 dark:bg-indigo-500"
+            />
+            <CardItem
+              title="Đơn hàng đang chờ xử lý"
+              Icon={FiClock}
+              loading={isLoadingSummary}
+              quantity={dashboardSummary?.pendingOrders || 0}
+              className="text-amber-600 dark:text-amber-100 bg-amber-100 dark:bg-amber-500"
+            />
+          </div>
 
-        {/* Charts section */}
-        <div className="grid gap-4 mb-8 md:grid-cols-2">
-          {/* Revenue chart */}
-          <ChartCard
-            mode={mode}
-            loading={isLoadingRevenue}
-            title="Thống kê doanh thu"
-            filterComponent={
-              <div className="flex items-center gap-2 mb-4">
-                <label className="text-sm font-medium">Thời kỳ:</label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    className="w-32 text-sm h-8 py-0"
-                    value={revenuePeriod}
-                    onChange={handleRevenuePeriodChange}
-                    disabled={isFilteringRevenue}
-                  >
-                    <option value="day">Theo ngày</option>
-                    <option value="week">Theo tuần</option>
-                    <option value="month">Theo tháng</option>
-                    <option value="year">Theo năm</option>
-                  </Select>
-                  {isFilteringRevenue && (
-                    <FiLoader className="animate-spin text-blue-500" />
-                  )}
+          {/* Global Date range filter section */}
+          <Card className="mb-4">
+            <CardBody>
+              <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
+                <div className="flex items-center gap-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+                  <FiFilter className="w-5 h-5" />
+                  <span>Lọc dữ liệu</span>
+                </div>
+                <div className="w-full md:w-auto flex flex-col md:flex-row gap-3 items-center">
+                  <label className="font-medium">Khoảng thời gian:</label>
+                  <input
+                    type="date"
+                    className="px-3 py-2 border rounded-md dark:bg-gray-800"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <span>-</span>
+                  <input
+                    type="date"
+                    className="px-3 py-2 border rounded-md dark:bg-gray-800"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                  <Button onClick={handleApplyFilters}>
+                    Áp dụng
+                  </Button>
                 </div>
               </div>
-            }
-          >
-            <LineChart
-              salesReport={prepareRevenueChartData()}
-              xKey="date"
-              lineKeys={['revenue']}
-              yAxisLabel="Triệu VND"
-            />
-          </ChartCard>
-
-          {/* Order status pie chart */}
-          <ChartCard
-            mode={mode}
-            loading={isLoadingOrderStatus}
-            title="Phân bố trạng thái đơn hàng"
-          >
-            <PieChart data={prepareOrderStatusChartData()} nameKey="name" dataKey="value" />
-          </ChartCard>
-        </div>
-
-        {/* Additional charts section */}
-        <div className="grid gap-4 mb-8 md:grid-cols-2">
-          {/* Category sales chart */}
-          <Card className="min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
-            <div className="flex justify-between items-center mb-4">
-              <p className="font-semibold text-gray-800 dark:text-gray-300">
-                {isLoadingCategorySales ? (
-                  <Skeleton
-                    count={1}
-                    height={20}
-                    className="dark:bg-gray-800 bg-gray-200"
-                    baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
-                    highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
-                  />
-                ) : (
-                  "Doanh thu theo danh mục"
-                )}
-              </p>
-              {!isLoadingCategorySales && (
-                <div className="flex items-center gap-2">
-                  <button
-                    className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'chart' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                    onClick={() => setCategorySalesView('chart')}
-                  >
-                    <FiBarChart2 className="w-4 h-4" />
-                    <span className="text-xs">Biểu đồ</span>
-                  </button>
-                  <button
-                    className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'table' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                    onClick={() => setCategorySalesView('table')}
-                  >
-                    <FiGrid className="w-4 h-4" />
-                    <span className="text-xs">Bảng</span>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="chart-container" style={{ minHeight: "250px" }}>
-              {isLoadingCategorySales ? (
-                <div className="w-full h-full flex justify-center items-center">
-                  <Skeleton
-                    className="dark:bg-gray-800 bg-gray-200"
-                    baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
-                    highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
-                    count={1}
-                    width="100%"
-                    height={250}
-                  />
-                </div>
-              ) : categorySalesData && categorySalesData.length > 0 ? (
-                <>
-                  {categorySalesView === 'chart' && (
-                    <BarChart
-                      data={prepareCategoryChartData()}
-                      xAxisDataKey="name"
-                      barDataKeys={['revenue']}
-                      barColors={['#34D399']}
-                      yAxisLabel="Triệu VND"
-                    />
-                  )}
-
-                  {categorySalesView === 'table' && (
-                    <div className="overflow-x-auto">
-                      <table className="w-full whitespace-nowrap">
-                        <thead>
-                          <tr className="text-xs font-medium tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <th className="px-4 py-3">Danh mục</th>
-                            <th className="px-4 py-3 text-right">Doanh thu</th>
-                            <th className="px-4 py-3 text-right">Số đơn hàng</th>
-                            <th className="px-4 py-3 text-right">Số sản phẩm</th>
-                            <th className="px-4 py-3 text-right">Tỷ trọng</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
-                          {categorySalesData.map((category, i) => (
-                            <tr key={category.categoryId} className="text-gray-700 dark:text-gray-300">
-                              <td className="px-4 py-3 flex items-center">
-                                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ['#34D399', '#3B82F6', '#F97316', '#0EA5E9', '#6366F1', '#EC4899'][i % 6] }}></div>
-                                <span>{category.categoryName}</span>
-                              </td>
-                              <td className="px-4 py-3 text-right font-medium">
-                                {formatCurrency(category.totalRevenue)}
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                {category.orderCount} đơn
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                {category.itemCount} sản phẩm
-                              </td>
-                              <td className="px-4 py-3 text-right font-medium">
-                                <div className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                                  <FiPercent className="w-3 h-3 mr-1" />
-                                  {category.percentage.toFixed(2)}%
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr className="font-semibold text-gray-900 dark:text-white border-t dark:border-gray-700">
-                            <td className="px-4 py-3">Tổng cộng</td>
-                            <td className="px-4 py-3 text-right">{formatCurrency(categorySalesData.reduce((sum, item) => sum + item.totalRevenue, 0))}</td>
-                            <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.orderCount, 0)} đơn</td>
-                            <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.itemCount, 0)} sản phẩm</td>
-                            <td className="px-4 py-3 text-right">100%</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-                  Không có dữ liệu thống kê danh mục
-                </div>
-              )}
-            </div>
+            </CardBody>
           </Card>
 
-          {/* Order trends chart */}
-          <ChartCard
-            mode={mode}
-            loading={isLoadingTrends}
-            title="Xu hướng đơn hàng"
-            filterComponent={
-              <div className="flex items-center gap-2 mb-4">
-                <label className="text-sm font-medium">Thời kỳ:</label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    className="w-32 text-sm h-8 py-0"
-                    value={orderTrendsPeriod}
-                    onChange={handleOrderTrendsPeriodChange}
-                    disabled={isFilteringTrends}
-                  >
-                    <option value="day">Theo ngày</option>
-                    <option value="week">Theo tuần</option>
-                    <option value="month">Theo tháng</option>
-                  </Select>
-                  {isFilteringTrends && (
-                    <FiLoader className="animate-spin text-blue-500" />
+          {/* Order status statistics */}
+          <div className="grid gap-4 mb-8 md:grid-cols-2 xl:grid-cols-4">
+            {orderStatusData.map((status) => (
+              <CardItem
+                key={status.statusCode}
+                title={status.statusName}
+                Icon={
+                  status.statusCode === 'PENDING' ? FiRefreshCw :
+                    status.statusCode === 'OUT_FOR_DELIVERY' ? FiTruck :
+                      status.statusCode === 'DELIVERED' ? FiCheck :
+                        FiShoppingCart
+                }
+                loading={isLoadingOrderStatus}
+                quantity={status.count}
+                secondValue={`${status.percentage.toFixed(1)}%`}
+                className={
+                  status.statusCode === 'DELIVERED' ? "text-emerald-600 dark:text-emerald-100 bg-emerald-100 dark:bg-emerald-500" :
+                    status.statusCode === 'PENDING' ? "text-orange-600 dark:text-orange-100 bg-orange-100 dark:bg-orange-500" :
+                      status.statusCode === 'CANCELLED' ? "text-red-600 dark:text-red-100 bg-red-100 dark:bg-red-500" :
+                        "text-blue-600 dark:text-blue-100 bg-blue-100 dark:bg-blue-500"
+                }
+              />
+            ))}
+          </div>
+
+          {/* Charts section */}
+          <div className="grid gap-4 mb-8 md:grid-cols-2">
+            {/* Revenue chart */}
+            <ChartCard
+              mode={mode}
+              loading={isLoadingRevenue}
+              title="Thống kê doanh thu"
+              filterComponent={
+                <div className="flex items-center gap-2 mb-4">
+                  <label className="text-sm font-medium">Thời kỳ:</label>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      className="w-32 text-sm h-8 py-0"
+                      value={revenuePeriod}
+                      onChange={handleRevenuePeriodChange}
+                      disabled={isFilteringRevenue}
+                    >
+                      <option value="day">Theo ngày</option>
+                      <option value="week">Theo tuần</option>
+                      <option value="month">Theo tháng</option>
+                      <option value="year">Theo năm</option>
+                    </Select>
+                    {isFilteringRevenue && (
+                      <FiLoader className="animate-spin text-blue-500" />
+                    )}
+                  </div>
+                </div>
+              }
+            >
+              <LineChart
+                salesReport={prepareRevenueChartData()}
+                xKey="date"
+                lineKeys={['revenue']}
+                yAxisLabel="Triệu VND"
+              />
+            </ChartCard>
+
+            {/* Order status pie chart */}
+            <ChartCard
+              mode={mode}
+              loading={isLoadingOrderStatus}
+              title="Phân bố trạng thái đơn hàng"
+            >
+              <PieChart data={prepareOrderStatusChartData()} nameKey="name" dataKey="value" />
+            </ChartCard>
+          </div>
+
+          {/* Additional charts section */}
+          <div className="grid gap-4 mb-8 md:grid-cols-2">
+            {/* Category sales chart */}
+            <Card className="min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+              <div className="flex justify-between items-center mb-4">
+                <p className="font-semibold text-gray-800 dark:text-gray-300">
+                  {isLoadingCategorySales ? (
+                    <Skeleton
+                      count={1}
+                      height={20}
+                      className="dark:bg-gray-800 bg-gray-200"
+                      baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                      highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                    />
+                  ) : (
+                    "Doanh thu theo danh mục"
                   )}
+                </p>
+                {!isLoadingCategorySales && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'chart' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                      onClick={() => setCategorySalesView('chart')}
+                    >
+                      <FiBarChart2 className="w-4 h-4" />
+                      <span className="text-xs">Biểu đồ</span>
+                    </button>
+                    <button
+                      className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'table' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                      onClick={() => setCategorySalesView('table')}
+                    >
+                      <FiGrid className="w-4 h-4" />
+                      <span className="text-xs">Bảng</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="chart-container" style={{ minHeight: "250px" }}>
+                {isLoadingCategorySales ? (
+                  <div className="w-full h-full flex justify-center items-center">
+                    <Skeleton
+                      className="dark:bg-gray-800 bg-gray-200"
+                      baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                      highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                      count={1}
+                      width="100%"
+                      height={250}
+                    />
+                  </div>
+                ) : categorySalesData && categorySalesData.length > 0 ? (
+                  <>
+                    {categorySalesView === 'chart' && (
+                      <BarChart
+                        data={prepareCategoryChartData()}
+                        xAxisDataKey="name"
+                        barDataKeys={['revenue']}
+                        barColors={['#34D399']}
+                        yAxisLabel="Triệu VND"
+                      />
+                    )}
+
+                    {categorySalesView === 'table' && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full whitespace-nowrap">
+                          <thead>
+                            <tr className="text-xs font-medium tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                              <th className="px-4 py-3">Danh mục</th>
+                              <th className="px-4 py-3 text-right">Doanh thu</th>
+                              <th className="px-4 py-3 text-right">Số đơn hàng</th>
+                              <th className="px-4 py-3 text-right">Số sản phẩm</th>
+                              <th className="px-4 py-3 text-right">Tỷ trọng</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
+                            {categorySalesData.map((category, i) => (
+                              <tr key={category.categoryId} className="text-gray-700 dark:text-gray-300">
+                                <td className="px-4 py-3 flex items-center">
+                                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ['#34D399', '#3B82F6', '#F97316', '#0EA5E9', '#6366F1', '#EC4899'][i % 6] }}></div>
+                                  <span>{category.categoryName}</span>
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium">
+                                  {formatCurrency(category.totalRevenue)}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  {category.orderCount} đơn
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  {category.itemCount} sản phẩm
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium">
+                                  <div className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                    <FiPercent className="w-3 h-3 mr-1" />
+                                    {category.percentage.toFixed(2)}%
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="font-semibold text-gray-900 dark:text-white border-t dark:border-gray-700">
+                              <td className="px-4 py-3">Tổng cộng</td>
+                              <td className="px-4 py-3 text-right">{formatCurrency(categorySalesData.reduce((sum, item) => sum + item.totalRevenue, 0))}</td>
+                              <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.orderCount, 0)} đơn</td>
+                              <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.itemCount, 0)} sản phẩm</td>
+                              <td className="px-4 py-3 text-right">100%</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                    Không có dữ liệu thống kê danh mục
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Order Growth Chart - Updated from Order Trends */}
+            <Card className="min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+              <div className="flex justify-between items-center mb-4">
+                <p className="font-semibold text-gray-800 dark:text-gray-300">
+                  {isLoadingTrends ? (
+                    <Skeleton
+                      count={1}
+                      height={20}
+                      className="dark:bg-gray-800 bg-gray-200"
+                      baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                      highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                    />
+                  ) : (
+                    "Tăng trưởng đơn hàng"
+                  )}
+                </p>
+                <div className="flex items-center gap-3">
+                  {!isLoadingTrends && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        className={`flex items-center gap-1 p-1.5 rounded ${orderGrowthView === 'chart' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                        onClick={() => setOrderGrowthView('chart')}
+                      >
+                        <FiBarChart2 className="w-4 h-4" />
+                        <span className="text-xs">Biểu đồ</span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-1 p-1.5 rounded ${orderGrowthView === 'table' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                        onClick={() => setOrderGrowthView('table')}
+                      >
+                        <FiGrid className="w-4 h-4" />
+                        <span className="text-xs">Bảng</span>
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium">Thời kỳ:</label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        className="w-32 text-sm h-8 py-0"
+                        value={orderTrendsPeriod}
+                        onChange={handleOrderTrendsPeriodChange}
+                        disabled={isFilteringTrends}
+                      >
+                        <option value="day">Theo ngày</option>
+                        <option value="week">Theo tuần</option>
+                        <option value="month">Theo tháng</option>
+                      </Select>
+                      {isFilteringTrends && (
+                        <FiLoader className="animate-spin text-blue-500" />
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            }
-          >
-            <LineChart
-              salesReport={orderTrends.map(item => ({
-                date: dayjs(item.date).format('DD/MM'),
-                orders: item.orderCount,
-                growth: item.growth
-              }))}
-              xKey="date"
-              lineKeys={['orders', 'growth']}
-              yAxisLabel="Đơn hàng"
-            />
-          </ChartCard>
-        </div>
 
-        {/* Top Products Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between mb-4">
-          <PageTitle>Sản phẩm bán chạy</PageTitle>
-          <div className="flex items-center gap-3 mt-2 md:mt-0">
-            <label className="font-medium flex items-center gap-2">
-              <FiList className="w-5 h-5" />
-              <span>Top</span>
-            </label>
-            <div className="flex items-center gap-2">
-              <Select
-                className="w-24 text-sm py-1"
-                value={topProductsLimit}
-                onChange={handleTopProductsLimitChange}
-                disabled={isFilteringTopProducts}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="15">15</option>
-                <option value="20">20</option>
-              </Select>
-              {isFilteringTopProducts && (
-                <FiLoader className="animate-spin text-blue-500" />
+              {/* Order Growth Summary Cards */}
+              {!isLoadingTrends && orderTrends && orderTrends.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Tổng đơn hàng</div>
+                    <div className="text-xl font-bold mt-1">{getTotalOrders()}</div>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Tăng trưởng trung bình</div>
+                    <div className={`text-xl font-bold mt-1 flex items-center ${calculateAverageGrowth() > 0 ? 'text-emerald-600' : calculateAverageGrowth() < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                      {calculateAverageGrowth() > 0 ? (
+                        <FiArrowUp className="mr-1" />
+                      ) : calculateAverageGrowth() < 0 ? (
+                        <FiArrowDown className="mr-1" />
+                      ) : null}
+                      {calculateAverageGrowth().toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
-            <span className="text-sm text-gray-500">sản phẩm</span>
-          </div>
-        </div>
 
-        {isLoadingTopProducts ? (
-          <TableLoading row={5} col={4} />
-        ) : (
-          <TableContainer className="mb-8">
-            <Table>
-              <TableHeader>
-                <tr>
-                  <TableCell>Tên sản phẩm</TableCell>
-                  <TableCell>Số lượng đã bán</TableCell>
-                  <TableCell>Doanh thu</TableCell>
-                  <TableCell>Tồn kho</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                </tr>
-              </TableHeader>
-              <tbody>
-                {topProducts.map((product) => (
-                  <tr key={product.productId}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 mr-3 rounded-full overflow-hidden">
-                          <img
-                            src={product.imageUrl || "/placeholder.png"}
-                            alt={product.productName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <span>{product.productName}</span>
+              <div className="chart-container" style={{ minHeight: "250px" }}>
+                {isLoadingTrends ? (
+                  <div className="w-full h-full flex justify-center items-center">
+                    <Skeleton
+                      className="dark:bg-gray-800 bg-gray-200"
+                      baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                      highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                      count={1}
+                      width="100%"
+                      height={250}
+                    />
+                  </div>
+                ) : orderTrends && orderTrends.length > 0 ? (
+                  <>
+                    {orderGrowthView === 'chart' && (
+                      <LineChart
+                        salesReport={prepareOrderGrowthChartData()}
+                        xKey="date"
+                        lineKeys={['orders', 'growth']}
+                        yAxisLabel="Đơn hàng"
+                      />
+                    )}
+
+                    {orderGrowthView === 'table' && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full whitespace-nowrap">
+                          <thead>
+                            <tr className="text-xs font-medium tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                              <th className="px-4 py-3">Thời gian</th>
+                              <th className="px-4 py-3 text-right">Số đơn hàng</th>
+                              <th className="px-4 py-3 text-right">Tăng trưởng</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
+                            {orderTrends.filter(item => item.orderCount > 0 || item.growth !== 0).map((item) => (
+                              <tr key={item.date} className="text-gray-700 dark:text-gray-300">
+                                <td className="px-4 py-3">
+                                  {dayjs(item.date).format('DD/MM/YYYY')}
+                                  {item.period === 'month' ? ' (Tháng)' :
+                                    item.period === 'week' ? ' (Tuần)' : ' (Ngày)'}
+                                </td>
+                                <td className="px-4 py-3 text-right font-medium">
+                                  {item.orderCount} đơn
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                  <div className={`inline-flex items-center px-2 py-0.5 rounded text-xs ${item.growth > 0
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300'
+                                    : item.growth < 0
+                                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                      : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                    }`}>
+                                    {item.growth > 0 && <FiArrowUp className="w-3 h-3 mr-1" />}
+                                    {item.growth < 0 && <FiArrowDown className="w-3 h-3 mr-1" />}
+                                    {item.growth.toFixed(2)}%
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {orderTrends.filter(item => item.orderCount > 0 || item.growth !== 0).length === 0 && (
+                          <div className="flex justify-center items-center py-8 text-gray-500">
+                            Không có dữ liệu tăng trưởng trong khoảng thời gian này
+                          </div>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell>{product.totalQuantitySold}</TableCell>
-                    <TableCell>{formatCurrency(product.totalRevenue)}</TableCell>
-                    <TableCell>{product.currentStock}</TableCell>
-                    <TableCell>
-                      {product.isLowStock ? (
-                        <Badge type="danger">Sắp hết hàng</Badge>
-                      ) : (
-                        <Badge type="success">Còn hàng</Badge>
-                      )}
-                    </TableCell>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </TableContainer>
-        )}
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                    Không có dữ liệu tăng trưởng
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
 
-        {/* Low Stock Products Section */}
-        <div className="flex flex-col md:flex-row items-center justify-between mb-4">
-          <PageTitle>Sản phẩm sắp hết hàng</PageTitle>
-          <div className="flex flex-wrap items-center gap-4 mt-2 md:mt-0">
-            <div className="flex items-center gap-2">
+          {/* Top Products Section */}
+          <div className="flex flex-col md:flex-row items-center justify-between mb-4">
+            <PageTitle>Sản phẩm bán chạy</PageTitle>
+            <div className="flex items-center gap-3 mt-2 md:mt-0">
               <label className="font-medium flex items-center gap-2">
-                <FiPackage className="w-5 h-5" />
-                <span>Hiển thị</span>
+                <FiList className="w-5 h-5" />
+                <span>Top</span>
               </label>
               <div className="flex items-center gap-2">
                 <Select
-                  className="w-20 text-sm py-1"
-                  value={lowStockLimit}
-                  onChange={handleLowStockLimitChange}
-                  disabled={isFilteringLowStock}
+                  className="w-24 text-sm py-1"
+                  value={topProductsLimit}
+                  onChange={handleTopProductsLimitChange}
+                  disabled={isFilteringTopProducts}
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>
                   <option value="15">15</option>
                   <option value="20">20</option>
                 </Select>
-                <span className="text-sm text-gray-500">sản phẩm</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="font-medium">Sắp xếp:</label>
-              <div className="flex items-center gap-2">
-                <Select
-                  className="w-36 text-sm py-1"
-                  value={lowStockSortBy}
-                  onChange={handleLowStockSortChange}
-                  disabled={isFilteringLowStock}
-                >
-                  <option value="quantity_asc">Tồn kho (thấp-cao)</option>
-                  <option value="quantity_desc">Tồn kho (cao-thấp)</option>
-                </Select>
-                {isFilteringLowStock && (
+                {isFilteringTopProducts && (
                   <FiLoader className="animate-spin text-blue-500" />
                 )}
               </div>
+              <span className="text-sm text-gray-500">sản phẩm</span>
             </div>
           </div>
-        </div>
 
-        {isLoadingInventory ? (
-          <TableLoading row={5} col={5} />
-        ) : (
-          <TableContainer className="mb-8">
-            {inventoryData && inventoryData.length > 0 ? (
+          {isLoadingTopProducts ? (
+            <TableLoading row={5} col={4} />
+          ) : (
+            <TableContainer className="mb-8">
               <Table>
                 <TableHeader>
                   <tr>
                     <TableCell>Tên sản phẩm</TableCell>
-                    <TableCell>Giá</TableCell>
-                    <TableCell>Tồn kho hiện tại</TableCell>
-                    <TableCell>Ngưỡng tồn kho thấp</TableCell>
+                    <TableCell>Số lượng đã bán</TableCell>
+                    <TableCell>Doanh thu</TableCell>
+                    <TableCell>Tồn kho</TableCell>
                     <TableCell>Trạng thái</TableCell>
                   </tr>
                 </TableHeader>
                 <tbody>
-                  {inventoryData.map((product) => (
+                  {topProducts.map((product) => (
                     <tr key={product.productId}>
                       <TableCell>
                         <div className="flex items-center">
@@ -813,70 +872,130 @@ const Dashboard = () => {
                           <span>{product.productName}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{formatCurrency(product.price)}</TableCell>
-                      <TableCell className={product.isLowStock ? "text-red-600 font-semibold" : ""}>
-                        {product.quantity}
-                      </TableCell>
-                      <TableCell>{product.lowStockThreshold}</TableCell>
+                      <TableCell>{product.totalQuantitySold}</TableCell>
+                      <TableCell>{formatCurrency(product.totalRevenue)}</TableCell>
+                      <TableCell>{product.currentStock}</TableCell>
                       <TableCell>
-                        {product.lowStock ? (
-                          <Badge type="danger">
-                            <div className="flex items-center">
-                              <FiAlertTriangle className="mr-1" />
-                              Sắp hết hàng
-                            </div>
-                          </Badge>
+                        {product.isLowStock ? (
+                          <Badge type="danger">Sắp hết hàng</Badge>
                         ) : (
-                          <Badge type="success">
-                            <div className="flex items-center">
-                              <FiCheck className="mr-1" />
-                              Chưa cảnh báo
-                            </div>
-                          </Badge>
+                          <Badge type="success">Còn hàng</Badge>
                         )}
                       </TableCell>
                     </tr>
                   ))}
                 </tbody>
               </Table>
-            ) : (
-              <NotFound title="Không có sản phẩm nào sắp hết hàng" />
-            )}
-          </TableContainer>
-        )}
+            </TableContainer>
+          )}
 
-        {/* Recent Orders Section */}
-        <PageTitle>Đơn hàng gần đây</PageTitle>
-        {loadingRecentOrder ? (
-          <TableLoading row={5} col={4} />
-        ) : dashboardRecentOrder?.orders?.length ? (
-          <TableContainer className="mb-8">
-            <Table>
-              <TableHeader>
-                <tr>
-                  <TableCell>Hóa đơn</TableCell>
-                  <TableCell>Ngày đặt hàng</TableCell>
-                  <TableCell>Tên khách hàng</TableCell>
-                  <TableCell>Phương thức thanh toán</TableCell>
-                  <TableCell>Tổng tiền</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell>Thao tác</TableCell>
-                </tr>
-              </TableHeader>
-              <OrderTable orders={dashboardRecentOrder.orders} />
-            </Table>
-            <TableFooter>
-              <Pagination
-                totalResults={dashboardRecentOrder.totalOrder}
-                resultsPerPage={8}
-                onChange={handleChangePage}
-                label="Table navigation"
-              />
-            </TableFooter>
-          </TableContainer>
-        ) : (
-          <NotFound title="Không tìm thấy đơn hàng nào" />
-        )}
+          {/* Low Stock Products Section */}
+          <div className="flex flex-col md:flex-row items-center justify-between mb-4">
+            <PageTitle>Sản phẩm sắp hết hàng</PageTitle>
+            <div className="flex flex-wrap items-center gap-4 mt-2 md:mt-0">
+              <div className="flex items-center gap-2">
+                <label className="font-medium flex items-center gap-2">
+                  <FiPackage className="w-5 h-5" />
+                  <span>Hiển thị</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    className="w-20 text-sm py-1"
+                    value={lowStockLimit}
+                    onChange={handleLowStockLimitChange}
+                    disabled={isFilteringLowStock}
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                  </Select>
+                  <span className="text-sm text-gray-500">sản phẩm</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="font-medium">Sắp xếp:</label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    className="w-36 text-sm py-1"
+                    value={lowStockSortBy}
+                    onChange={handleLowStockSortChange}
+                    disabled={isFilteringLowStock}
+                  >
+                    <option value="quantity_asc">Tồn kho (thấp-cao)</option>
+                    <option value="quantity_desc">Tồn kho (cao-thấp)</option>
+                  </Select>
+                  {isFilteringLowStock && (
+                    <FiLoader className="animate-spin text-blue-500" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingInventory ? (
+            <TableLoading row={5} col={5} />
+          ) : (
+            <TableContainer className="mb-8">
+              {inventoryData && inventoryData.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <tr>
+                      <TableCell>Tên sản phẩm</TableCell>
+                      <TableCell>Giá</TableCell>
+                      <TableCell>Tồn kho hiện tại</TableCell>
+                      <TableCell>Ngưỡng tồn kho thấp</TableCell>
+                      <TableCell>Trạng thái</TableCell>
+                    </tr>
+                  </TableHeader>
+                  <tbody>
+                    {inventoryData.map((product) => (
+                      <tr key={product.productId}>
+                        <TableCell>
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 mr-3 rounded-full overflow-hidden">
+                              <img
+                                src={product.imageUrl || "/placeholder.png"}
+                                alt={product.productName}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <span>{product.productName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatCurrency(product.price)}</TableCell>
+                        <TableCell className={product.isLowStock ? "text-red-600 font-semibold" : ""}>
+                          {product.quantity}
+                        </TableCell>
+                        <TableCell>{product.lowStockThreshold}</TableCell>
+                        <TableCell>
+                          {product.lowStock ? (
+                            <Badge type="danger">
+                              <div className="flex items-center">
+                                <FiAlertTriangle className="mr-1" />
+                                Sắp hết hàng
+                              </div>
+                            </Badge>
+                          ) : (
+                            <Badge type="success">
+                              <div className="flex items-center">
+                                <FiCheck className="mr-1" />
+                                Chưa cảnh báo
+                              </div>
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              ) : (
+                <NotFound title="Không có sản phẩm nào sắp hết hàng" />
+              )}
+            </TableContainer>
+          )}
+        </div>
       </AnimatedContent>
     </>
   );
