@@ -13,7 +13,7 @@ const sidebar = [
   {
     path: "/dashboard", // the url
     icon: FiGrid, // icon
-    name: "Trang tổng quan", // name that appear in Sidebar
+    name: "Phân tích", // name that appear in Sidebar
   },
 
   {

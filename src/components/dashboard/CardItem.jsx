@@ -14,6 +14,7 @@ const CardItem = ({
   pending,
   todayPending,
   olderPending,
+  secondValue,
 }) => {
   const { getNumberTwo } = useUtilsFunction();
 
@@ -36,7 +37,7 @@ const CardItem = ({
               <Icon />
             </div>
 
-            <div>
+            <div className="flex-grow">
               <h6 className="text-sm mb-1 font-medium text-gray-600 dark:text-gray-400">
                 <span>{title}</span>{" "}
                 {amount && (
@@ -62,9 +63,16 @@ const CardItem = ({
                 </div>
               )}
 
-              <p className="text-2xl font-bold leading-none text-gray-600 dark:text-gray-200">
-                {quantity}
-              </p>
+              <div className="flex items-end justify-between">
+                <p className="text-2xl font-bold leading-none text-gray-600 dark:text-gray-200">
+                  {quantity}
+                </p>
+                {secondValue && (
+                  <span className="text-sm font-medium ml-2 text-gray-500 dark:text-gray-400">
+                    {secondValue}
+                  </span>
+                )}
+              </div>
             </div>
           </CardBody>
         </Card>

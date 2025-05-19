@@ -3,60 +3,68 @@ import "chart.js/auto";
 import { Line } from "react-chartjs-2";
 import { useTranslation } from "react-i18next";
 
-const LineChart = ({ salesReport }) => {
-  // console.log("saleReport", salesReport);
+const LineChart = ({
+  salesReport = [],
+  xKey = "date",
+  lineKeys = ["total", "order"],
+  yAxisLabel = ""
+}) => {
   // Create a Set to store unique dates
   const uniqueDates = new Set();
 
   // Use filter to iterate through the array and add unique dates to the Set
   const updatedSalesReport = salesReport?.filter((item) => {
-    const isUnique = !uniqueDates.has(item.date);
-    uniqueDates.add(item.date);
+    const isUnique = !uniqueDates.has(item[xKey]);
+    uniqueDates.add(item[xKey]);
     return isUnique;
   });
 
-  // console.log("updatedSalesReport", updatedSalesReport);
+  const [activeKey, setActiveKey] = useState(lineKeys[0]);
 
-  const [activeButton, setActiveButton] = useState({
-    title: "Sales",
-    color: "emerald",
-  });
+  const handleClick = (keyName) => {
+    setActiveKey(keyName);
+  };
 
-  const handleClick = ({ title, color }) => {
-    setActiveButton({ title, color });
+  const getColor = (keyName) => {
+    const colorMap = {
+      revenue: "#10B981", // emerald
+      total: "#10B981", // emerald
+      orders: "#F97316", // orange
+      order: "#F97316", // orange
+      growth: "#6366F1", // indigo
+    };
+
+    return colorMap[keyName] || "#10B981";
   };
 
   const barOptions = {
     data: {
       labels: updatedSalesReport
-        ?.sort((a, b) => new Date(a.date) - new Date(b.date))
-        ?.map((or) => or.date),
+        ?.sort((a, b) => new Date(a[xKey]) - new Date(b[xKey]))
+        ?.map((item) => item[xKey]),
       datasets: [
-        activeButton.title === "Sales"
-          ? {
-              label: "Sales",
-              data: updatedSalesReport
-                ?.sort((a, b) => new Date(a.date) - new Date(b.date))
-                ?.map((or) => or.total),
-              borderColor: "#10B981",
-              backgroundColor: "#10B981",
-              borderWidth: 3,
-              yAxisID: "y",
-            }
-          : {
-              label: "Order",
-              data: updatedSalesReport
-                ?.sort((a, b) => new Date(a.date) - new Date(b.date))
-                ?.map((or) => or.order),
-              borderColor: "#F97316",
-              backgroundColor: "#F97316",
-              borderWidth: 3,
-              yAxisID: "y",
-            },
+        {
+          label: activeKey.charAt(0).toUpperCase() + activeKey.slice(1),
+          data: updatedSalesReport
+            ?.sort((a, b) => new Date(a[xKey]) - new Date(b[xKey]))
+            ?.map((item) => item[activeKey]),
+          borderColor: getColor(activeKey),
+          backgroundColor: getColor(activeKey),
+          borderWidth: 3,
+          yAxisID: "y",
+        },
       ],
     },
     options: {
       responsive: true,
+      scales: {
+        y: {
+          title: {
+            display: yAxisLabel ? true : false,
+            text: yAxisLabel,
+          }
+        }
+      }
     },
     legend: {
       display: false,
@@ -65,37 +73,40 @@ const LineChart = ({ salesReport }) => {
 
   const { t } = useTranslation();
 
+  const getKeyDisplayName = (key) => {
+    const nameMap = {
+      revenue: "Revenue",
+      total: "Sales",
+      orders: "Orders",
+      order: "Orders",
+      growth: "Growth %"
+    };
+
+    return t(nameMap[key] || key.charAt(0).toUpperCase() + key.slice(1));
+  };
+
   return (
     <>
       <div className="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700 mb-4">
         <ul className="flex flex-wrap -mb-px">
-          <li className="mr-2">
-            <button
-              onClick={() => handleClick({ title: "Sales", color: "emerald" })}
-              type="button"
-              className={`inline-block p-2 rounded-t-lg border-b-2 border-transparent ${
-                activeButton.title === "Sales"
-                  ? "text-emerald-600 border-emerald-600 dark:text-emerald-500 dark:border-emerald-500"
+          {lineKeys.map((keyName) => (
+            <li key={keyName} className="mr-2">
+              <button
+                onClick={() => handleClick(keyName)}
+                type="button"
+                className={`inline-block p-2 rounded-t-lg border-b-2 border-transparent ${activeKey === keyName
+                  ? `text-${getColor(keyName).replace('#', '')} border-${getColor(keyName).replace('#', '')} dark:text-${getColor(keyName).replace('#', '')} dark:border-${getColor(keyName).replace('#', '')}`
                   : "hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
-              }  focus:outline-none`}
-            >
-              {t("Sales")}
-            </button>
-          </li>
-
-          <li className="mr-2">
-            <button
-              onClick={() => handleClick({ title: "Orders", color: "red" })}
-              type="button"
-              className={`inline-block p-2 rounded-t-lg border-b-2 border-transparent ${
-                activeButton.title === "Orders"
-                  ? "text-orange-500 border-orange-500 dark:text-orange-500 dark:border-orange-500"
-                  : "hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
-              }  focus:outline-none`}
-            >
-              {t("Orders")}
-            </button>
-          </li>
+                  }  focus:outline-none`}
+                style={{
+                  color: activeKey === keyName ? getColor(keyName) : undefined,
+                  borderBottomColor: activeKey === keyName ? getColor(keyName) : undefined,
+                }}
+              >
+                {getKeyDisplayName(keyName)}
+              </button>
+            </li>
+          ))}
         </ul>
       </div>
 
