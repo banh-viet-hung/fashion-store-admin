@@ -11,7 +11,9 @@ import {
   Badge,
   Select,
   Button,
-  Label
+  Label,
+  Tab,
+  Tabs
 } from "@windmill/react-ui";
 import dayjs from "dayjs";
 import { useContext, useEffect, useState } from "react";
@@ -30,9 +32,14 @@ import {
   FiFilter,
   FiLoader,
   FiList,
-  FiPackage
+  FiPackage,
+  FiPieChart,
+  FiGrid,
+  FiCreditCard,
+  FiPercent
 } from "react-icons/fi";
 import { ImCreditCard } from "react-icons/im";
+import Skeleton from "react-loading-skeleton";
 
 //internal import
 import useAsync from "@/hooks/useAsync";
@@ -104,6 +111,9 @@ const Dashboard = () => {
   const [isFilteringTrends, setIsFilteringTrends] = useState(false);
   const [isFilteringTopProducts, setIsFilteringTopProducts] = useState(false);
   const [isFilteringLowStock, setIsFilteringLowStock] = useState(false);
+
+  // Add view state for category sales
+  const [categorySalesView, setCategorySalesView] = useState('chart'); // 'chart' or 'table'
 
   // Recent orders
   const { data: dashboardRecentOrder, loading: loadingRecentOrder } = useAsync(
@@ -336,7 +346,8 @@ const Dashboard = () => {
   const prepareCategoryChartData = () => {
     return categorySalesData.map(category => ({
       name: category.categoryName,
-      revenue: category.totalRevenue / 1000000 // Convert to millions for better display
+      revenue: category.totalRevenue / 1000000, // Convert to millions for better display
+      percentage: category.percentage
     }));
   };
 
@@ -497,19 +508,122 @@ const Dashboard = () => {
         {/* Additional charts section */}
         <div className="grid gap-4 mb-8 md:grid-cols-2">
           {/* Category sales chart */}
-          <ChartCard
-            mode={mode}
-            loading={isLoadingCategorySales}
-            title="Doanh thu theo danh mục"
-          >
-            <BarChart
-              data={prepareCategoryChartData()}
-              xAxisDataKey="name"
-              barDataKeys={['revenue']}
-              barColors={['#34D399']}
-              yAxisLabel="Triệu VND"
-            />
-          </ChartCard>
+          <Card className="min-w-0 p-4 bg-white rounded-lg shadow-xs dark:bg-gray-800">
+            <div className="flex justify-between items-center mb-4">
+              <p className="font-semibold text-gray-800 dark:text-gray-300">
+                {isLoadingCategorySales ? (
+                  <Skeleton
+                    count={1}
+                    height={20}
+                    className="dark:bg-gray-800 bg-gray-200"
+                    baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                    highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                  />
+                ) : (
+                  "Doanh thu theo danh mục"
+                )}
+              </p>
+              {!isLoadingCategorySales && (
+                <div className="flex items-center gap-2">
+                  <button
+                    className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'chart' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                    onClick={() => setCategorySalesView('chart')}
+                  >
+                    <FiBarChart2 className="w-4 h-4" />
+                    <span className="text-xs">Biểu đồ</span>
+                  </button>
+                  <button
+                    className={`flex items-center gap-1 p-1.5 rounded ${categorySalesView === 'table' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                    onClick={() => setCategorySalesView('table')}
+                  >
+                    <FiGrid className="w-4 h-4" />
+                    <span className="text-xs">Bảng</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="chart-container" style={{ minHeight: "250px" }}>
+              {isLoadingCategorySales ? (
+                <div className="w-full h-full flex justify-center items-center">
+                  <Skeleton
+                    className="dark:bg-gray-800 bg-gray-200"
+                    baseColor={`${mode === "dark" ? "#010101" : "#f9f9f9"}`}
+                    highlightColor={`${mode === "dark" ? "#1a1c23" : "#f8f8f8"} `}
+                    count={1}
+                    width="100%"
+                    height={250}
+                  />
+                </div>
+              ) : categorySalesData && categorySalesData.length > 0 ? (
+                <>
+                  {categorySalesView === 'chart' && (
+                    <BarChart
+                      data={prepareCategoryChartData()}
+                      xAxisDataKey="name"
+                      barDataKeys={['revenue']}
+                      barColors={['#34D399']}
+                      yAxisLabel="Triệu VND"
+                    />
+                  )}
+
+                  {categorySalesView === 'table' && (
+                    <div className="overflow-x-auto">
+                      <table className="w-full whitespace-nowrap">
+                        <thead>
+                          <tr className="text-xs font-medium tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                            <th className="px-4 py-3">Danh mục</th>
+                            <th className="px-4 py-3 text-right">Doanh thu</th>
+                            <th className="px-4 py-3 text-right">Số đơn hàng</th>
+                            <th className="px-4 py-3 text-right">Số sản phẩm</th>
+                            <th className="px-4 py-3 text-right">Tỷ trọng</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y dark:divide-gray-700 dark:bg-gray-800">
+                          {categorySalesData.map((category, i) => (
+                            <tr key={category.categoryId} className="text-gray-700 dark:text-gray-300">
+                              <td className="px-4 py-3 flex items-center">
+                                <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ['#34D399', '#3B82F6', '#F97316', '#0EA5E9', '#6366F1', '#EC4899'][i % 6] }}></div>
+                                <span>{category.categoryName}</span>
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                {formatCurrency(category.totalRevenue)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {category.orderCount} đơn
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                {category.itemCount} sản phẩm
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                <div className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                  <FiPercent className="w-3 h-3 mr-1" />
+                                  {category.percentage.toFixed(2)}%
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="font-semibold text-gray-900 dark:text-white border-t dark:border-gray-700">
+                            <td className="px-4 py-3">Tổng cộng</td>
+                            <td className="px-4 py-3 text-right">{formatCurrency(categorySalesData.reduce((sum, item) => sum + item.totalRevenue, 0))}</td>
+                            <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.orderCount, 0)} đơn</td>
+                            <td className="px-4 py-3 text-right">{categorySalesData.reduce((sum, item) => sum + item.itemCount, 0)} sản phẩm</td>
+                            <td className="px-4 py-3 text-right">100%</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
+                  Không có dữ liệu thống kê danh mục
+                </div>
+              )}
+            </div>
+          </Card>
 
           {/* Order trends chart */}
           <ChartCard
