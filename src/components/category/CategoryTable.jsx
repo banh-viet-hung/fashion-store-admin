@@ -1,14 +1,21 @@
-import { TableBody, TableCell, TableRow } from "@windmill/react-ui";
+import { TableBody, TableCell, TableRow, Badge } from "@windmill/react-ui";
+import { useState, useContext } from "react";
 
 import CheckBox from "@/components/form/others/CheckBox";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
 import DeleteModal from "@/components/modal/DeleteModal";
+import RestoreCategoryModal from "@/components/modal/RestoreCategoryModal";
 import MainDrawer from "@/components/drawer/MainDrawer";
 import CategoryDrawer from "@/components/drawer/CategoryDrawer";
 import EditDeleteButton from "@/components/table/EditDeleteButton";
+import { SidebarContext } from "@/context/SidebarContext";
 
 const CategoryTable = ({ data, lang, isCheck, categories, setIsCheck }) => {
   const { title, serviceId, handleModalOpen, handleUpdate } = useToggleDrawer();
+  const { toggleModal, isModalOpen, sortedField } = useContext(SidebarContext);
+  const [restoreId, setRestoreId] = useState('');
+  const [restoreCategoryName, setRestoreCategoryName] = useState('');
+  const [modalType, setModalType] = useState('delete');
 
   const handleClick = (e) => {
     const { id, checked } = e.target;
@@ -21,9 +28,25 @@ const CategoryTable = ({ data, lang, isCheck, categories, setIsCheck }) => {
     });
   };
 
+  const handleDeleteModalOpen = (id, title) => {
+    setModalType('delete');
+    handleModalOpen(id, title);
+  };
+
+  const handleRestoreModalOpen = (id, name) => {
+    setModalType('restore');
+    setRestoreId(id);
+    setRestoreCategoryName(name);
+    toggleModal();
+  };
+
+  // Check if we're viewing deleted categories
+  const isViewingDeletedCategories = sortedField === "da_xoa";
+
   return (
     <>
-      {isCheck?.length < 1 && <DeleteModal id={serviceId} title={title} />}
+      {isCheck?.length < 1 && modalType === 'delete' && <DeleteModal id={serviceId} title={title} />}
+      {modalType === 'restore' && <RestoreCategoryModal id={restoreId} categoryName={restoreCategoryName} />}
 
       <MainDrawer>
         <CategoryDrawer id={serviceId} data={data} lang={lang} />
@@ -54,8 +77,11 @@ const CategoryTable = ({ data, lang, isCheck, categories, setIsCheck }) => {
               <EditDeleteButton
                 id={category.id}
                 title={category.name}
+                isDeleted={isViewingDeletedCategories || category?.deleted || false}
                 handleUpdate={handleUpdate}
-                handleModalOpen={handleModalOpen}
+                handleModalOpen={handleDeleteModalOpen}
+                handleRestoreModalOpen={handleRestoreModalOpen}
+                isCheck={isCheck}
               />
             </TableCell>
           </TableRow>
