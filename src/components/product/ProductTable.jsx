@@ -7,17 +7,22 @@ import {
   TableRow,
 } from "@windmill/react-ui";
 import { t } from "i18next";
-import { FiZoomIn } from "react-icons/fi";
+import { FiZoomIn, FiRotateCcw } from "react-icons/fi";
 import { Link } from "react-router-dom";
+import { useState, useContext } from "react";
 
 import MainDrawer from "@/components/drawer/MainDrawer";
 import ProductDrawer from "@/components/drawer/ProductDrawer";
 import CheckBox from "@/components/form/others/CheckBox";
 import DeleteModal from "@/components/modal/DeleteModal";
+import RestoreModal from "@/components/modal/RestoreModal";
 import EditDeleteButton from "@/components/table/EditDeleteButton";
 import ShowHideButton from "@/components/table/ShowHideButton";
 import Tooltip from "@/components/tooltip/Tooltip";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
+import ProductServices from "@/services/ProductServices";
+import { notifySuccess, notifyError } from "@/utils/toast";
+import { SidebarContext } from "@/context/SidebarContext";
 
 const formatVND = (value) => {
   if (value == null) return "0 VNĐ";
@@ -30,21 +35,39 @@ const formatVND = (value) => {
 
 const ProductTable = ({ products, isCheck, setIsCheck }) => {
   const { title, serviceId, handleModalOpen, handleUpdate } = useToggleDrawer();
+  const { toggleModal, isModalOpen } = useContext(SidebarContext);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreId, setRestoreId] = useState('');
+  const [restoreProductName, setRestoreProductName] = useState('');
+  const [modalType, setModalType] = useState('delete');
 
   const handleClick = (e) => {
     const { id, checked } = e.target;
     setIsCheck((prev) => {
       if (checked) {
-        return prev.includes(id) ? prev : [...prev, id]; // Chỉ thêm nếu chưa có
+        return prev.includes(id) ? prev : [...prev, id];
       } else {
         return prev.filter((item) => item !== id);
       }
     });
   };
 
+  const handleDeleteModalOpen = (id, title) => {
+    setModalType('delete');
+    handleModalOpen(id, title);
+  };
+
+  const handleRestoreModalOpen = (id, name) => {
+    setModalType('restore');
+    setRestoreId(id);
+    setRestoreProductName(name);
+    toggleModal();
+  };
+
   return (
     <>
-      {isCheck?.length < 1 && <DeleteModal id={serviceId} title={title} />}
+      {isCheck?.length < 1 && modalType === 'delete' && <DeleteModal id={serviceId} title={title} />}
+      {modalType === 'restore' && <RestoreModal id={restoreId} productName={restoreProductName} />}
 
       {/* {isCheck?.length < 2 && (
         <MainDrawer>
@@ -59,9 +82,9 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
               <CheckBox
                 type="checkbox"
                 name={product?.name}
-                id={String(product.id)} // Chuyển id thành chuỗi
+                id={String(product.id)}
                 handleClick={handleClick}
-                isChecked={isCheck?.includes(String(product.id))} // Chuyển id thành chuỗi
+                isChecked={isCheck?.includes(String(product.id))}
               />
             </TableCell>
 
@@ -108,7 +131,7 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
             </TableCell>
 
             <TableCell>
-              {product.status === "da_xoa" ? (
+              {product.deleted || product.status === "da_xoa" ? (
                 <Badge type="neutral">Đã xóa</Badge>
               ) : product.quantity > 0 ? (
                 <Badge type="success">{t("Selling")}</Badge>
@@ -116,13 +139,15 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
                 <Badge type="danger">{t("SoldOut")}</Badge>
               )}
             </TableCell>
-            <TableCell>
+            <TableCell className="text-right pr-4">
               <EditDeleteButton
                 id={product.id}
                 product={product}
                 isCheck={isCheck}
+                isDeleted={product.deleted || product.status === "da_xoa"}
                 handleUpdate={handleUpdate}
-                handleModalOpen={handleModalOpen}
+                handleModalOpen={handleDeleteModalOpen}
+                handleRestoreModalOpen={handleRestoreModalOpen}
                 title={product?.name}
               />
             </TableCell>

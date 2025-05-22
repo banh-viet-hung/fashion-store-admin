@@ -7,8 +7,7 @@ const ProductServices = {
     const searchStatus = status !== null ? status : "";
 
     const response = await requests.get(
-      `/products/list?page=${
-        page - 1
+      `/products/list?page=${page - 1
       }&limit=${limit}&category=${searchCategory}&status=${searchStatus}&title=${searchTitle}`
     );
     if (!response.success) {
@@ -20,7 +19,7 @@ const ProductServices = {
   getProductById: async (id) => {
     return requests.get(`/products/${id}`);
   },
-  
+
   getProductImages: async (id) => {
     try {
       const response = await fetch(`http://localhost:8080/product/${id}/images`);
@@ -37,7 +36,7 @@ const ProductServices = {
       };
     }
   },
-  
+
   getProductVariants: async (id) => {
     try {
       const response = await fetch(`http://localhost:8080/product-variant/${id}/variants`);
@@ -54,51 +53,51 @@ const ProductServices = {
       };
     }
   },
-  
+
   addProduct: async (body) => {
     return requests.post("/products/create", body);
   },
-  
+
   addProductImages: async (productId, body) => {
     console.log("Gửi request lưu ảnh với body:", JSON.stringify(body));
     // Đảm bảo body được gửi đúng định dạng
     const requestBody = {
       imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [body.imageUrls]
     };
-    
+
     return requests.post(`/products/${productId}/images`, requestBody);
   },
-  
+
   addProductVariants: async (productId, variants) => {
     console.log("Gửi request tạo variants với body:", JSON.stringify(variants));
     return requests.post(`/product-variant/${productId}/variants`, variants);
   },
-  
+
   addAllProducts: async (body) => {
     return requests.post("/products/all", body);
   },
-  
+
   updateProduct: async (id, body) => {
     return requests.put(`/products/update/${id}`, body);
   },
-  
+
   updateProductImages: async (id, body) => {
     // Đảm bảo body được gửi đúng định dạng
     const requestBody = {
       imageUrls: Array.isArray(body.imageUrls) ? body.imageUrls : [body.imageUrls]
     };
-    
+
     return requests.put(`/products/${id}/images`, requestBody);
   },
-  
+
   updateProductVariants: async (id, body) => {
     return requests.put(`/product-variant/${id}/variants`, body);
   },
-  
+
   updateManyProducts: async (body) => {
     return requests.patch("products/update/many", body);
   },
-  
+
   updateStatus: async (id, body) => {
     return requests.put(`/products/status/${id}`, body);
   },
@@ -109,6 +108,10 @@ const ProductServices = {
 
   deleteManyProducts: async (body) => {
     return requests.post("/products/delete-many", body); // API xóa nhiều
+  },
+
+  restoreProduct: async (id) => {
+    return requests.post(`/products/restore/${id}`); // API khôi phục sản phẩm đã xóa
   },
 };
 
