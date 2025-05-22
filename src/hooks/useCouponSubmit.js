@@ -32,7 +32,8 @@ const useCouponSubmit = (id) => {
         startDate: data.startDate,
         endDate: data.endDate,
         usageLimit: parseInt(data.usageLimit),
-        minOrderValue: parseFloat(data.minOrderValue)
+        minOrderValue: parseFloat(data.minOrderValue),
+        maxDiscountAmount: parseFloat(data.maxDiscountAmount)
       };
 
       if (id) {
@@ -67,11 +68,12 @@ const useCouponSubmit = (id) => {
       setValue("discountValue", "");
       setValue("minOrderValue", "");
       setValue("usageLimit", "");
+      setValue("maxDiscountAmount", "");
       clearErrors();
       setDiscountType(true);
       return;
     }
-    
+
     if (id) {
       (async () => {
         try {
@@ -85,6 +87,7 @@ const useCouponSubmit = (id) => {
             setValue("discountValue", coupon.discountValue);
             setValue("minOrderValue", coupon.minOrderValue);
             setValue("usageLimit", coupon.usageLimit);
+            setValue("maxDiscountAmount", coupon.maxDiscountAmount);
             setDiscountType(coupon.discountType === "PERCENT");
           }
         } catch (err) {
@@ -96,7 +99,7 @@ const useCouponSubmit = (id) => {
 
   // Form field registration with validation rules
   const registerField = {
-    code: register("code", { 
+    code: register("code", {
       required: "Mã giảm giá là bắt buộc",
       minLength: {
         value: 3,
@@ -111,27 +114,27 @@ const useCouponSubmit = (id) => {
         message: "Mã giảm giá chỉ được chứa chữ in hoa, số, dấu gạch ngang và gạch dưới"
       }
     }),
-    description: register("description", { 
+    description: register("description", {
       required: "Mô tả mã giảm giá là bắt buộc",
       maxLength: {
         value: 100,
         message: "Mô tả không được quá 100 ký tự"
       }
     }),
-    startDate: register("startDate", { 
+    startDate: register("startDate", {
       required: "Ngày bắt đầu là bắt buộc"
     }),
-    endDate: register("endDate", { 
+    endDate: register("endDate", {
       required: "Ngày kết thúc là bắt buộc",
       validate: value => {
         if (value && document.querySelector('input[name="startDate"]').value) {
-          return new Date(value) > new Date(document.querySelector('input[name="startDate"]').value) || 
+          return new Date(value) > new Date(document.querySelector('input[name="startDate"]').value) ||
             "Ngày kết thúc phải sau ngày bắt đầu";
         }
         return true;
       }
     }),
-    discountValue: register("discountValue", { 
+    discountValue: register("discountValue", {
       required: "Giá trị giảm giá là bắt buộc",
       min: {
         value: 1,
@@ -139,23 +142,30 @@ const useCouponSubmit = (id) => {
       },
       max: {
         value: discountType ? 100 : 1000000,
-        message: discountType 
-          ? "Phần trăm giảm giá không được quá 100%" 
+        message: discountType
+          ? "Phần trăm giảm giá không được quá 100%"
           : "Giá trị giảm giá không được quá 1,000,000 VND"
       }
     }),
-    minOrderValue: register("minOrderValue", { 
+    minOrderValue: register("minOrderValue", {
       required: "Giá trị đơn hàng tối thiểu là bắt buộc",
       min: {
         value: 0,
         message: "Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 0"
       }
     }),
-    usageLimit: register("usageLimit", { 
+    usageLimit: register("usageLimit", {
       required: "Giới hạn sử dụng là bắt buộc",
       min: {
         value: 1,
         message: "Giới hạn sử dụng phải lớn hơn 0"
+      }
+    }),
+    maxDiscountAmount: register("maxDiscountAmount", {
+      required: "Giá trị giảm tối đa là bắt buộc",
+      min: {
+        value: 0,
+        message: "Giá trị giảm tối đa phải lớn hơn hoặc bằng 0"
       }
     })
   };

@@ -108,6 +108,11 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
               </span>{" "}
             </TableCell>
             <TableCell>
+              <span className="text-sm font-semibold">
+                {coupon?.maxDiscountAmount ? formatCurrency(coupon?.maxDiscountAmount) : "Không giới hạn"}
+              </span>{" "}
+            </TableCell>
+            <TableCell>
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {dayjs(coupon.startDate).format("DD/MM/YYYY")}
               </span>
@@ -125,9 +130,9 @@ const CouponTable = ({ isCheck, coupons, setIsCheck }) => {
                   {coupon.usedCount}/{coupon.usageLimit}
                 </div>
                 <div className="w-16 bg-gray-200 rounded-full h-2 mt-1">
-                  <div 
-                    className="bg-emerald-500 h-2 rounded-full" 
-                    style={{ 
+                  <div
+                    className="bg-emerald-500 h-2 rounded-full"
+                    style={{
                       width: `${Math.min(100, (coupon.usedCount / coupon.usageLimit) * 100)}%`,
                     }}
                   ></div>

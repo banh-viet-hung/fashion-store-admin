@@ -154,6 +154,25 @@ const CouponDrawer = ({ id }) => {
             </div>
 
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
+              <LabelArea label="Giá trị giảm tối đa" />
+              <div className="col-span-8 sm:col-span-4">
+                <div className="flex flex-row">
+                  <span className="inline-flex items-center px-3 rounded rounded-r-none border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm focus:border-emerald-300 dark:bg-gray-700 dark:text-gray-300 dark:border dark:border-gray-600">
+                    VND
+                  </span>
+                  <Input
+                    className="mr-2 p-2 rounded-l-none"
+                    name="maxDiscountAmount"
+                    type="number"
+                    placeholder="Nhập giá trị giảm tối đa"
+                    {...register.maxDiscountAmount}
+                  />
+                </div>
+                <Error errorName={errors.maxDiscountAmount} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
               <LabelArea label="Giới hạn sử dụng" />
               <div className="col-span-8 sm:col-span-4">
                 <Input
