@@ -108,7 +108,9 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
             </TableCell>
 
             <TableCell>
-              {product.quantity > 0 ? (
+              {product.status === "da_xoa" ? (
+                <Badge type="neutral">Đã xóa</Badge>
+              ) : product.quantity > 0 ? (
                 <Badge type="success">{t("Selling")}</Badge>
               ) : (
                 <Badge type="danger">{t("SoldOut")}</Badge>

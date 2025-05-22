@@ -140,7 +140,10 @@ const Products = () => {
     if (searchText) summaries.push(`Tên sản phẩm: ${searchText}`);
     if (category) summaries.push(`Danh mục: ${category}`);
     if (sortedField) {
-      const status = sortedField === "con_hang" ? "Còn hàng" : "Hết hàng";
+      let status = "";
+      if (sortedField === "con_hang") status = "Còn hàng";
+      else if (sortedField === "het_hang") status = "Hết hàng";
+      else if (sortedField === "da_xoa") status = "Đã xóa";
       summaries.push(`Trạng thái: ${status}`);
     }
 
@@ -299,6 +302,7 @@ const Products = () => {
                         </option>
                         <option value="con_hang">{t("Còn hàng")}</option>
                         <option value="het_hang">{t("Hết hàng")}</option>
+                        <option value="da_xoa">{t("Đã xóa")}</option>
                       </Select>
                     </div>
 
