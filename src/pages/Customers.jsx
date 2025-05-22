@@ -11,9 +11,10 @@ import {
   TableFooter,
   TableHeader,
   Badge,
+  Select,
 } from "@windmill/react-ui";
 import { useTranslation } from "react-i18next";
-import { FiFilter, FiPlus, FiSearch, FiInfo, FiMail } from "react-icons/fi";
+import { FiFilter, FiPlus, FiSearch, FiInfo, FiMail, FiUser, FiPhone } from "react-icons/fi";
 import { IoClose } from "react-icons/io5";
 
 import CustomerTable from "@/components/customer/CustomerTable";
@@ -44,6 +45,7 @@ const Customers = () => {
 
   // Trạng thái mới cho bộ lọc
   const [showFilters, setShowFilters] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const userRef = useRef(null);
 
   // Set the current page type when component mounts
@@ -54,8 +56,8 @@ const Customers = () => {
   const asyncFunction = async ({ cancelToken }) => {
     const page = customerPage;
     const size = 3;
-    const email = searchText || "";
-    return CustomerServices.getAllCustomers({ page, size, email, cancelToken });
+    const searchTerm = searchText || "";
+    return CustomerServices.getAllCustomers({ page, size, searchTerm, isActive, cancelToken });
   };
 
   const { data, loading, error } = useAsync(asyncFunction);
@@ -71,6 +73,7 @@ const Customers = () => {
   useEffect(() => {
     setSearchText(""); // Reset searchText về rỗng
     setCurrentPage(1); // Reset currentPage về 1
+    setIsActive(true); // Reset isActive về true
     setIsUpdate(true); // Kích hoạt useAsync gọi lại API với trạng thái mới
   }, [setSearchText, setCurrentPage, setIsUpdate]);
 
@@ -84,8 +87,16 @@ const Customers = () => {
   const handleResetField = () => {
     setSearchText("");
     setCurrentPage(1);
+    setIsActive(true);
     setIsUpdate(true); // Buộc useAsync gọi lại API
     if (userRef.current) userRef.current.value = "";
+  };
+
+  // Xử lý thay đổi trạng thái isActive
+  const handleIsActiveChange = (e) => {
+    setIsActive(e.target.value === "true");
+    setCurrentPage(1);
+    setIsUpdate(true);
   };
 
   // Hiển thị/ẩn bộ lọc
@@ -95,7 +106,7 @@ const Customers = () => {
 
   // Kiểm tra nếu có bộ lọc active
   const hasActiveFilters = () => {
-    return searchText;
+    return searchText || isActive !== true;
   };
 
   return (
@@ -114,7 +125,7 @@ const Customers = () => {
             <span className="hidden md:inline-block">Lọc</span>
             {hasActiveFilters() && (
               <Badge type="danger" className="ml-1 px-1.5 py-0.5">
-                1
+                {(searchText ? 1 : 0) + (isActive !== true ? 1 : 0)}
               </Badge>
             )}
           </Button>
@@ -142,7 +153,12 @@ const Customers = () => {
             <div className="mt-2 flex flex-wrap gap-1.5">
               {searchText && (
                 <Badge type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
-                  Email: {searchText}
+                  Tìm kiếm: {searchText}
+                </Badge>
+              )}
+              {isActive !== true && (
+                <Badge type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
+                  Trạng thái: {isActive ? "Đang hoạt động" : "Bị khóa"}
                 </Badge>
               )}
             </div>
@@ -170,7 +186,7 @@ const Customers = () => {
             <CardBody className="p-4">
               <form onSubmit={handleSubmitUser} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Cột 1: Tìm kiếm email */}
+                  {/* Cột 1: Tìm kiếm và trạng thái */}
                   <div className="space-y-3">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -180,9 +196,23 @@ const Customers = () => {
                         ref={userRef}
                         type="search"
                         name="search"
-                        placeholder={t("Nhập email khách hàng")}
+                        placeholder={t("Nhập email, tên hoặc số điện thoại")}
                         className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
                       />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Trạng thái
+                      </label>
+                      <Select
+                        className="mt-1 h-10 rounded-lg"
+                        value={isActive.toString()}
+                        onChange={handleIsActiveChange}
+                      >
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Bị khóa</option>
+                      </Select>
                     </div>
                   </div>
 
@@ -224,7 +254,6 @@ const Customers = () => {
                 <TableHeader>
                   <tr className="bg-gray-50 dark:bg-gray-800">
                     <TableCell>{t("Trạng thái")}</TableCell>
-                    <TableCell>{t("Ngày sinh")}</TableCell>
                     <TableCell>{t("Họ tên")}</TableCell>
                     <TableCell>{t("Email")}</TableCell>
                     <TableCell>{t("SĐT")}</TableCell>

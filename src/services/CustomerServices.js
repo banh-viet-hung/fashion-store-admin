@@ -1,9 +1,9 @@
 import requests from "./httpService";
 
 const CustomerServices = {
-  getAllCustomers: async ({ page, size, email, cancelToken }) => {
+  getAllCustomers: async ({ page, size, searchTerm, isActive, cancelToken }) => {
     return requests.get(
-      `/user/all?page=${page}&size=${size}&email=${email}&roleName=USER`,
+      `/user/all?page=${page}&size=${size}&searchTerm=${searchTerm}&roleName=USER&isActive=${isActive}`,
       { cancelToken }
     );
   },

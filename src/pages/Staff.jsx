@@ -57,6 +57,7 @@ const Staff = () => {
 
   // Trạng thái cục bộ
   const [selectedRole, setSelectedRole] = useState("STAFF");
+  const [isActive, setIsActive] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const userRef = useRef(null);
 
@@ -70,8 +71,9 @@ const Staff = () => {
     return AdminServices.getAllStaff({
       page: staffPage,
       size: 3,
-      email: searchText,
+      searchTerm: searchText,
       roleName: selectedRole,
+      isActive: isActive,
       cancelToken,
     });
   };
@@ -89,6 +91,7 @@ const Staff = () => {
   useEffect(() => {
     setSearchText(""); // Reset searchText về rỗng
     setCurrentPage(1); // Reset currentPage về 1
+    setIsActive(true); // Reset isActive về true
     setIsUpdate(true); // Kích hoạt useAsync gọi lại API với trạng thái mới
   }, [setSearchText, setCurrentPage, setIsUpdate]);
 
@@ -105,9 +108,17 @@ const Staff = () => {
   const handleResetField = () => {
     setSearchText("");
     setSelectedRole("STAFF");
+    setIsActive(true);
     setCurrentPage(1); // Reset về trang 1
     setIsUpdate(true); // Buộc useAsync gọi lại API
     if (userRef.current) userRef.current.value = "";
+  };
+
+  // Xử lý thay đổi trạng thái isActive
+  const handleIsActiveChange = (e) => {
+    setIsActive(e.target.value === "true");
+    setCurrentPage(1);
+    setIsUpdate(true);
   };
 
   const handleAddStaffClick = () => {
@@ -116,7 +127,7 @@ const Staff = () => {
 
   // Kiểm tra nếu có bộ lọc active
   const hasActiveFilters = () => {
-    return searchText || (selectedRole && selectedRole !== "STAFF");
+    return searchText || (selectedRole && selectedRole !== "STAFF") || isActive !== true;
   };
 
   // Hiển thị/ẩn bộ lọc
@@ -140,7 +151,7 @@ const Staff = () => {
             <span className="hidden md:inline-block">Lọc</span>
             {hasActiveFilters() && (
               <Badge type="danger" className="ml-1 px-1.5 py-0.5">
-                {searchText && selectedRole !== "STAFF" ? "2" : "1"}
+                {(searchText ? 1 : 0) + (selectedRole !== "STAFF" ? 1 : 0) + (isActive !== true ? 1 : 0)}
               </Badge>
             )}
           </Button>
@@ -181,12 +192,17 @@ const Staff = () => {
             <div className="mt-2 flex flex-wrap gap-1.5">
               {searchText && (
                 <Badge type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
-                  Email: {searchText}
+                  Tìm kiếm: {searchText}
                 </Badge>
               )}
               {selectedRole && selectedRole !== "STAFF" && (
                 <Badge type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
-                  Role: {selectedRole}
+                  Chức vụ: {selectedRole}
+                </Badge>
+              )}
+              {isActive !== true && (
+                <Badge type="info" className="bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 px-2 py-0.5 text-xs flex items-center">
+                  Trạng thái: {isActive ? "Đang hoạt động" : "Bị khóa"}
                 </Badge>
               )}
             </div>
@@ -214,7 +230,7 @@ const Staff = () => {
             <CardBody className="p-4">
               <form onSubmit={handleSubmitUser} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Cột 1: Tìm kiếm email */}
+                  {/* Cột 1: Tìm kiếm và trạng thái */}
                   <div className="space-y-3">
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -224,9 +240,23 @@ const Staff = () => {
                         ref={userRef}
                         type="search"
                         name="search"
-                        placeholder={t("Nhập email nhân viên")}
+                        placeholder={t("Nhập email, tên hoặc số điện thoại")}
                         className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10"
                       />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Trạng thái
+                      </label>
+                      <Select
+                        className="mt-1 h-10 rounded-lg"
+                        value={isActive.toString()}
+                        onChange={handleIsActiveChange}
+                      >
+                        <option value="true">Đang hoạt động</option>
+                        <option value="false">Bị khóa</option>
+                      </Select>
                     </div>
                   </div>
 
@@ -236,6 +266,9 @@ const Staff = () => {
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <FiUsers className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </div>
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                        Chức vụ
+                      </label>
                       {rolesLoading ? (
                         <Select disabled className="pl-10 focus:ring-2 focus:ring-emerald-500 rounded-lg h-10">
                           <option>Loading...</option>
@@ -284,7 +317,7 @@ const Staff = () => {
       </AnimatedContent>
 
       {loading ? (
-        <TableLoading row={12} col={7} width={163} height={20} />
+        <TableLoading row={12} col={6} width={163} height={20} />
       ) : error ? (
         <span className="text-center mx-auto text-red-500">{error}</span>
       ) : data?.data?.content?.length > 0 ? (
@@ -297,7 +330,6 @@ const Staff = () => {
                     <TableCell>{t("Họ tên")}</TableCell>
                     <TableCell>{t("Email")}</TableCell>
                     <TableCell>{t("SĐT")}</TableCell>
-                    <TableCell>{t("Ngày sinh")}</TableCell>
                     <TableCell>{t("Chức vụ")}</TableCell>
                     <TableCell className="text-center">{t("Trạng thái")}</TableCell>
                     <TableCell className="text-center">{t("Hành động")}</TableCell>

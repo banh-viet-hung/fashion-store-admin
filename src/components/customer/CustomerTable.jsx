@@ -27,6 +27,16 @@ const CustomerTable = ({ customers }) => {
       <TableBody className="dark:bg-gray-900">
         {customers?.map((user) => (
           <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {/* Trạng thái */}
+            <TableCell>
+              <Badge
+                type={user.active ? "success" : "danger"}
+                className="px-3 py-1 text-xs font-medium"
+              >
+                {user.active ? 'Hoạt động' : 'Bị khóa'}
+              </Badge>
+            </TableCell>
+
             {/* Họ tên */}
             <TableCell>
               <div className="flex items-center">
@@ -53,25 +63,6 @@ const CustomerTable = ({ customers }) => {
               </span>
             </TableCell>
 
-            {/* Ngày sinh */}
-            <TableCell>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {user.dateOfBirth
-                  ? dayjs(user.dateOfBirth).format("DD/MM/YYYY")
-                  : "Chưa cập nhật"}
-              </span>
-            </TableCell>
-
-            {/* Trạng thái */}
-            <TableCell>
-              <Badge
-                type={user.active ? "success" : "danger"}
-                className="px-3 py-1 text-xs font-medium"
-              >
-                {user.active ? 'Hoạt động' : 'Bị khóa'}
-              </Badge>
-            </TableCell>
-
             {/* Hành động */}
             <TableCell>
               <div className="flex justify-end items-center space-x-1">
@@ -85,7 +76,7 @@ const CustomerTable = ({ customers }) => {
                     />
                   </Link>
                 </div>
-                
+
                 <UserStatusButton email={user.email} isActive={user.active} />
               </div>
             </TableCell>

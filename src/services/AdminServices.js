@@ -30,9 +30,9 @@ const AdminServices = {
     return requests.post("/admin/add", body);
   },
 
-  getAllStaff: async ({ page = 1, size = 5, email = "", roleName = "STAFF", cancelToken }) => {
+  getAllStaff: async ({ page = 1, size = 5, searchTerm = "", roleName = "STAFF", isActive = true, cancelToken }) => {
     return requests.get(
-      `/user/all?page=${page}&size=${size}&email=${email}&roleName=${roleName}`,
+      `/user/all?page=${page}&size=${size}&searchTerm=${searchTerm}&roleName=${roleName}&isActive=${isActive}`,
       { cancelToken }
     );
   },

@@ -30,7 +30,7 @@ const StaffTable = ({ staffs, lang }) => {
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [showRoleChangeDrawer, setShowRoleChangeDrawer] = useState(false);
-  
+
   // Reset state khi drawer đóng
   useEffect(() => {
     if (!isDrawerOpen) {
@@ -113,14 +113,6 @@ const StaffTable = ({ staffs, lang }) => {
             </TableCell>
 
             <TableCell>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {staff.dateOfBirth
-                  ? dayjs(staff.dateOfBirth).format("DD/MM/YYYY")
-                  : "Chưa cập nhật"}
-              </span>
-            </TableCell>
-
-            <TableCell>
               <Badge
                 type={getRoleBadgeType(staff.roleName)}
                 className="px-3 py-1 text-xs font-medium"
@@ -140,10 +132,10 @@ const StaffTable = ({ staffs, lang }) => {
 
             <TableCell>
               <div className="flex justify-end items-center space-x-1">
-                <StaffStatusButton 
-                  id={staff.id} 
-                  email={staff.email} 
-                  isActive={staff.active} 
+                <StaffStatusButton
+                  id={staff.id}
+                  email={staff.email}
+                  isActive={staff.active}
                   handleUpdate={() => handleEditClick(staff)}
                 />
               </div>
