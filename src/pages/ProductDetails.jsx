@@ -132,9 +132,10 @@ const ProductDetails = () => {
                   {t("Quantity")}: {data?.stock}
                 </span>
               </div>
-              <p className="text-sm leading-6 text-gray-500 dark:text-gray-400 md:leading-7">
-                {showingTranslateValue(data?.description)}
-              </p>
+              <div
+                className="text-sm leading-6 text-gray-500 dark:text-gray-400 md:leading-7"
+                dangerouslySetInnerHTML={{ __html: data?.description }}
+              ></div>
               <div className="flex flex-col mt-4">
                 <p className="font-serif font-semibold py-1 text-gray-500 text-sm">
                   <span className="text-gray-700 dark:text-gray-400">

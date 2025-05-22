@@ -15,6 +15,8 @@ import { Scrollbars } from "react-custom-scrollbars-2";
 import { useTranslation } from "react-i18next";
 import Multiselect from "multiselect-react-dropdown";
 import { FiTrash, FiArrowRight } from "react-icons/fi";
+import { Editor } from 'react-draft-wysiwyg';
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 // Internal imports
 import useAddProductSubmit from "@/hooks/useAddProductSubmit";
@@ -25,7 +27,7 @@ import DrawerButton from "@/components/form/button/DrawerButton";
 
 const AddProductDrawer = () => {
   const { t } = useTranslation();
-  
+
   const {
     register,
     handleSubmit,
@@ -48,9 +50,11 @@ const AddProductDrawer = () => {
     handleTabChange,
     productVariants,
     updateVariantQuantity,
-    handleContinueToVariants
+    handleContinueToVariants,
+    editorState,
+    onEditorStateChange
   } = useAddProductSubmit();
-  
+
   return (
     <>
       <div className="w-full relative p-6 border-b border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -59,7 +63,7 @@ const AddProductDrawer = () => {
           description={t("Điền các thông tin để tạo sản phẩm mới")}
         />
       </div>
-      
+
       {/* Tabs */}
       <div className="text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-600 dark:bg-gray-700">
         <ul className="flex flex-wrap -mb-px">
@@ -70,11 +74,10 @@ const AddProductDrawer = () => {
                 e.preventDefault();
                 handleTabChange("basic");
               }}
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "basic"
+              className={`inline-block p-4 rounded-t-lg ${activeTab === "basic"
                   ? "text-emerald-600 border-b-2 border-emerald-600 active"
                   : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
-              }`}
+                }`}
             >
               {t("Thông tin cơ bản")}
             </a>
@@ -86,18 +89,17 @@ const AddProductDrawer = () => {
                 e.preventDefault();
                 handleContinueToVariants();
               }}
-              className={`inline-block p-4 rounded-t-lg ${
-                activeTab === "variants"
+              className={`inline-block p-4 rounded-t-lg ${activeTab === "variants"
                   ? "text-emerald-600 border-b-2 border-emerald-600 active"
                   : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
-              }`}
+                }`}
             >
               {t("Kho hàng")}
             </a>
           </li>
         </ul>
       </div>
-      
+
       <Scrollbars className="w-full md:w-7/12 lg:w-8/12 xl:w-8/12 relative dark:bg-gray-700 dark:text-gray-200">
         <form onSubmit={handleSubmit(onSubmit)} className="block">
           {activeTab === "basic" && (
@@ -118,23 +120,36 @@ const AddProductDrawer = () => {
                   <Error errorName={errors.name} />
                 </div>
               </div>
-              
+
               {/* Mô tả sản phẩm */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Mô tả sản phẩm")} />
                 <div className="col-span-8 sm:col-span-4">
-                  <Textarea
-                    className="border text-sm focus:outline-none block w-full bg-gray-100 border-transparent focus:bg-white"
-                    {...register("description")}
-                    name="description"
+                  <Editor
+                    editorState={editorState}
+                    wrapperClassName="border rounded-md"
+                    editorClassName="px-4 py-2 min-h-[150px] bg-gray-100 focus:bg-white dark:bg-gray-700 dark:text-gray-200"
+                    toolbarClassName="border-0 border-b border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    onEditorStateChange={onEditorStateChange}
+                    toolbar={{
+                      options: ['inline', 'blockType', 'list', 'textAlign', 'link', 'emoji', 'image', 'remove', 'history'],
+                      inline: {
+                        options: ['bold', 'italic', 'underline', 'strikethrough'],
+                      },
+                      blockType: {
+                        inDropdown: true,
+                        options: ['Normal', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'],
+                      },
+                      textAlign: { inDropdown: true },
+                      link: { inDropdown: true },
+                    }}
                     placeholder={t("Mô tả chi tiết sản phẩm")}
-                    rows="4"
                     spellCheck="false"
                   />
                   <Error errorName={errors.description} />
                 </div>
               </div>
-              
+
               {/* Giá gốc */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Giá gốc")} />
@@ -155,7 +170,7 @@ const AddProductDrawer = () => {
                   <Error errorName={errors.price} />
                 </div>
               </div>
-              
+
               {/* Giá khuyến mãi */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Giá khuyến mãi (Tùy chọn)")} />
@@ -175,7 +190,7 @@ const AddProductDrawer = () => {
                   <Error errorName={errors.salePrice} />
                 </div>
               </div>
-              
+
               {/* Danh mục */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Danh mục")} />
@@ -190,7 +205,7 @@ const AddProductDrawer = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Màu sắc */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Màu sắc (Tùy chọn)")} />
@@ -210,7 +225,7 @@ const AddProductDrawer = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Kích thước */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Kích thước (Tùy chọn)")} />
@@ -230,7 +245,7 @@ const AddProductDrawer = () => {
                   />
                 </div>
               </div>
-              
+
               {/* Hình ảnh sản phẩm */}
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Hình ảnh sản phẩm")} />
@@ -269,13 +284,13 @@ const AddProductDrawer = () => {
                         {t("(Hỗ trợ định dạng: jpeg, jpg, png, gif, webp. Tối đa 6 hình)")}
                       </em>
                     </div>
-                    
+
                     {imageUrls.length > 0 && (
                       <aside className="flex flex-row flex-wrap mt-4">
                         {imageUrls.map((image, index) => (
                           <div key={index} className="relative w-24 h-24 mr-2 mb-2 border rounded-md overflow-hidden">
-                            <img 
-                              src={image.preview} 
+                            <img
+                              src={image.preview}
                               alt={`preview ${index}`}
                               className="w-full h-full object-cover"
                             />
@@ -293,9 +308,9 @@ const AddProductDrawer = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end">
-                <Button 
+                <Button
                   onClick={handleContinueToVariants}
                   className="h-12 px-6"
                 >
@@ -304,17 +319,17 @@ const AddProductDrawer = () => {
               </div>
             </div>
           )}
-          
+
           {activeTab === "variants" && (
             <div className="px-6 pt-8 flex-grow w-full h-full max-h-full pb-40 md:pb-32 lg:pb-32 xl:pb-32">
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-4">{t("Số lượng theo biến thể")}</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  {selectedColors.length === 0 && selectedSizes.length === 0 
-                    ? t("Nhập tổng số lượng sản phẩm") 
+                  {selectedColors.length === 0 && selectedSizes.length === 0
+                    ? t("Nhập tổng số lượng sản phẩm")
                     : t("Nhập số lượng cho từng biến thể của sản phẩm")}
                 </p>
-                
+
                 <Table className="w-full whitespace-nowrap">
                   <TableHeader>
                     <TableRow>
@@ -350,10 +365,10 @@ const AddProductDrawer = () => {
                     ))}
                   </TableBody>
                 </Table>
-                
+
                 <div className="flex justify-between mt-8">
-                  <Button 
-                    layout="outline" 
+                  <Button
+                    layout="outline"
                     onClick={() => handleTabChange("basic")}
                     className="h-12 px-6"
                   >
@@ -363,7 +378,7 @@ const AddProductDrawer = () => {
               </div>
             </div>
           )}
-          
+
           <DrawerButton title="Sản phẩm" isSubmitting={isSubmitting} />
         </form>
       </Scrollbars>

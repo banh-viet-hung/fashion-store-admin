@@ -2,6 +2,9 @@ import { useContext, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import swal from "sweetalert";
 import axios from "axios";
+import { EditorState, ContentState, convertToRaw } from 'draft-js';
+import draftToHtml from 'draftjs-to-html';
+import { stateFromHTML } from 'draft-js-import-html';
 
 //internal import
 import useAsync from "./useAsync";
@@ -24,6 +27,7 @@ const useAddProductSubmit = () => {
   const [selectedSizes, setSelectedSizes] = useState([]);
   const [activeTab, setActiveTab] = useState("basic");
   const [productVariants, setProductVariants] = useState([]);
+  const [editorState, setEditorState] = useState(EditorState.createEmpty());
 
   // react-hook-form
   const {
@@ -37,6 +41,16 @@ const useAddProductSubmit = () => {
   const { data: categories } = useAsync(CategoryServices.getAllCategories);
   const { data: colors } = useAsync(ColorServices.getAllColors);
   const { data: sizes } = useAsync(SizeServices.getAllSizes);
+
+  // Handle editor state change
+  const onEditorStateChange = (state) => {
+    setEditorState(state);
+  };
+
+  // Convert editor content to HTML
+  const getHtmlContent = () => {
+    return draftToHtml(convertToRaw(editorState.getCurrentContent()));
+  };
 
   // Handle form submission
   const onSubmit = async (data) => {
@@ -69,7 +83,7 @@ const useAddProductSubmit = () => {
       // 1. Tạo sản phẩm cơ bản trước
       const productData = {
         name: data.name,
-        description: data.description,
+        description: getHtmlContent(),
         price: Number(data.price),
         salePrice: data.salePrice ? Number(data.salePrice) : 0,
         categorySlugs: selectedCategories.map(cat => cat.slug),
@@ -78,23 +92,23 @@ const useAddProductSubmit = () => {
       };
 
       const response = await ProductServices.addProduct(productData);
-      
+
       if (!response.success) {
         setIsSubmitting(false);
         return notifyError(response.message || "Có lỗi xảy ra khi tạo sản phẩm!");
       }
 
       const productId = response.data;
-      
+
       try {
         // 2. Upload và thêm hình ảnh cho sản phẩm
         const files = imageUrls.map(image => image.file);
         const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
-        
+
         await ProductServices.addProductImages(productId, {
           imageUrls: cloudinaryUrls
         });
-        
+
         // 3. Thêm các biến thể sản phẩm
         await ProductServices.addProductVariants(productId, {
           variants: productVariants
@@ -108,6 +122,7 @@ const useAddProductSubmit = () => {
         setSelectedCategories([]);
         setSelectedColors([]);
         setSelectedSizes([]);
+        setEditorState(EditorState.createEmpty());
         closeDrawer();
       } catch (error) {
         console.error("Lỗi trong quá trình xử lý:", error);
@@ -306,7 +321,9 @@ const useAddProductSubmit = () => {
     handleTabChange,
     productVariants,
     updateVariantQuantity,
-    handleContinueToVariants
+    handleContinueToVariants,
+    editorState,
+    onEditorStateChange
   };
 };
 

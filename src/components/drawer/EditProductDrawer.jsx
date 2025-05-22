@@ -15,6 +15,8 @@ import { Scrollbars } from "react-custom-scrollbars-2";
 import { useTranslation } from "react-i18next";
 import Multiselect from "multiselect-react-dropdown";
 import { FiTrash, FiArrowRight, FiArrowLeft, FiSave } from "react-icons/fi";
+import { Editor } from 'react-draft-wysiwyg';
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 // Internal imports
 import useEditProductSubmit from "@/hooks/useEditProductSubmit";
@@ -57,7 +59,9 @@ const EditProductDrawer = ({ id }) => {
     handleUpdateImages,
     handleUpdateVariants,
     debugInfo,
-    refreshData
+    refreshData,
+    editorState,
+    onEditorStateChange
   } = useEditProductSubmit(id);
 
   if (loading) {
@@ -88,8 +92,8 @@ const EditProductDrawer = ({ id }) => {
                 handleTabChange("basic");
               }}
               className={`inline-block p-4 rounded-t-lg ${activeTab === "basic"
-                  ? "text-emerald-600 border-b-2 border-emerald-600 active"
-                  : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
+                ? "text-emerald-600 border-b-2 border-emerald-600 active"
+                : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
                 }`}
             >
               {t("Thông tin cơ bản")}
@@ -103,8 +107,8 @@ const EditProductDrawer = ({ id }) => {
                 handleContinueToVariants();
               }}
               className={`inline-block p-4 rounded-t-lg ${activeTab === "variants"
-                  ? "text-emerald-600 border-b-2 border-emerald-600 active"
-                  : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
+                ? "text-emerald-600 border-b-2 border-emerald-600 active"
+                : "border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300"
                 }`}
             >
               {t("Kho hàng")}
@@ -138,12 +142,25 @@ const EditProductDrawer = ({ id }) => {
               <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <LabelArea label={t("Mô tả sản phẩm")} />
                 <div className="col-span-8 sm:col-span-4">
-                  <Textarea
-                    className="border text-sm focus:outline-none block w-full bg-gray-100 border-transparent focus:bg-white"
-                    {...register("description")}
-                    name="description"
+                  <Editor
+                    editorState={editorState}
+                    wrapperClassName="border rounded-md"
+                    editorClassName="px-4 py-2 min-h-[150px] bg-gray-100 focus:bg-white dark:bg-gray-700 dark:text-gray-200"
+                    toolbarClassName="border-0 border-b border-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    onEditorStateChange={onEditorStateChange}
+                    toolbar={{
+                      options: ['inline', 'blockType', 'list', 'textAlign', 'link', 'emoji', 'image', 'remove', 'history'],
+                      inline: {
+                        options: ['bold', 'italic', 'underline', 'strikethrough'],
+                      },
+                      blockType: {
+                        inDropdown: true,
+                        options: ['Normal', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'],
+                      },
+                      textAlign: { inDropdown: true },
+                      link: { inDropdown: true },
+                    }}
                     placeholder={t("Mô tả chi tiết sản phẩm")}
-                    rows="4"
                     spellCheck="false"
                   />
                   <Error errorName={errors.description} />
