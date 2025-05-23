@@ -388,7 +388,7 @@ const Products = () => {
           </CardBody>
         </Card>
       ) : (
-        <NotFound title="Product" />
+        <NotFound title="Không tìm thấy sản phẩm nào phù hợp" />
       )}
     </>
   );
