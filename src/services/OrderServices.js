@@ -33,11 +33,11 @@ const OrderServices = {
   getAdminOrders: async (params) => {
     // Create query parameters from filters
     const queryParams = new URLSearchParams();
-    
+
     // Add pagination parameters
     if (params.page) queryParams.append('page', params.page);
     if (params.size) queryParams.append('size', params.size);
-    
+
     // Add optional filter parameters if they exist
     if (params.orderId) queryParams.append('orderId', params.orderId);
     if (params.orderStatusCode) queryParams.append('orderStatusCode', params.orderStatusCode);
@@ -45,7 +45,7 @@ const OrderServices = {
     if (params.shippingMethodCode) queryParams.append('shippingMethodCode', params.shippingMethodCode);
     if (params.startDate) queryParams.append('startDate', params.startDate);
     if (params.endDate) queryParams.append('endDate', params.endDate);
-    
+
     return requests.get(`/admin/orders?${queryParams.toString()}`);
   },
 
@@ -81,8 +81,12 @@ const OrderServices = {
     return requests.put(`/orders/${id}`, body, headers);
   },
 
-  updateOrderStatus: async (id, statusCode) => {
-    return requests.post(`/orders/${id}/update-status?statusCode=${statusCode}`);
+  updateOrderStatus: async (id, statusCode, cancelReason) => {
+    let url = `/orders/${id}/update-status?statusCode=${statusCode}`;
+    if (statusCode === "CANCELLED" && cancelReason) {
+      url += `&cancelReason=${encodeURIComponent(cancelReason)}`;
+    }
+    return requests.post(url);
   },
 
   deleteOrder: async (id) => {

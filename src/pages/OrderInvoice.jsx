@@ -626,6 +626,14 @@ const OrderInvoice = () => {
                                 </time>
                               </div>
 
+                              {status.description === "CANCELLED" && status.cancelReason && (
+                                <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    <span className="font-medium text-gray-700 dark:text-gray-200">{t("Lí do hủy")}:</span> {status.cancelReason}
+                                  </p>
+                                </div>
+                              )}
+
                               {status.note && (
                                 <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded text-sm text-gray-600 dark:text-gray-300 border-l-2 border-gray-300 dark:border-gray-600">
                                   <p className="italic">{status.note}</p>
