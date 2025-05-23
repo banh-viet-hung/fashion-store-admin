@@ -157,14 +157,13 @@ const Products = () => {
         <PageTitle>{t("Quản lý sản phẩm")}</PageTitle>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => isCheck?.length > 0 && handleDeleteMany(isCheck, data?.content)}
+            onClick={() => isCheck?.length > 0 && sortedField !== "da_xoa" && handleDeleteMany(isCheck, data?.content)}
             layout="outline"
             size="small"
-            className={`flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600 ${isCheck?.length < 1 ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300'
-              }`}
+            className={`flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600 ${(isCheck?.length < 1 || sortedField === "da_xoa") ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300'}`}
           >
-            <FiTrash2 className={`h-4 w-4 ${isCheck?.length < 1 ? 'text-gray-400' : 'text-red-600'}`} />
-            <span className={`hidden md:inline-block ${isCheck?.length < 1 ? 'text-gray-400' : 'text-red-600'}`}>
+            <FiTrash2 className={`h-4 w-4 ${(isCheck?.length < 1 || sortedField === "da_xoa") ? 'text-gray-400' : 'text-red-600'}`} />
+            <span className={`hidden md:inline-block ${(isCheck?.length < 1 || sortedField === "da_xoa") ? 'text-gray-400' : 'text-red-600'}`}>
               {t("Xóa")}
             </span>
             {isCheck?.length > 0 && (

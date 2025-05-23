@@ -42,28 +42,37 @@ const Category = () => {
     setCurrentPageType,
     isUpdate,
     setIsUpdate,
-    setSortedField: setContextSortedField
+    setSortedField, // Only use this to update the context when needed for the table
   } = useContext(SidebarContext);
 
   const { t } = useTranslation();
   const { title, handleDeleteMany, allId, serviceId } = useToggleDrawer();
 
   const pageSize = 10;
-  const [sortedField, setSortedField] = useState("");
+  // Use a local categoryFilterStatus instead of the shared sortedField from context
+  const [categoryFilterStatus, setCategoryFilterStatus] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     setCurrentPageType("category");
-  }, [setCurrentPageType]);
+
+    // Reset the filter when component mounts
+    setCategoryFilterStatus("");
+
+    // Clean up context when component unmounts
+    return () => {
+      setSortedField(""); // Reset the context sortedField when leaving this page
+    };
+  }, [setCurrentPageType, setSortedField]);
 
   const { data, loading, error } = useAsync(() =>
-    CategoryServices.getAllCategory(categoryPage - 1, pageSize, sortedField)
+    CategoryServices.getAllCategory(categoryPage - 1, pageSize, categoryFilterStatus)
   );
 
-  // Update context sortedField when local state changes
+  // Update context sortedField only when needed for the table component
   useEffect(() => {
-    setContextSortedField(sortedField);
-  }, [sortedField, setContextSortedField]);
+    setSortedField(categoryFilterStatus);
+  }, [categoryFilterStatus, setSortedField]);
 
   useEffect(() => {
     if (data && !loading) {
@@ -96,23 +105,23 @@ const Category = () => {
     setShowFilters(!showFilters);
   };
 
-  // Handle status filter change
+  // Handle status filter change - use local state instead of context
   const handleStatusChange = (e) => {
-    setSortedField(e.target.value);
+    setCategoryFilterStatus(e.target.value);
   };
 
   // Handle reset filters
   const handleResetFilters = () => {
-    setSortedField("");
+    setCategoryFilterStatus("");
   };
 
   // Generate filter summary text
   const getFilterSummary = () => {
     const summaries = [];
 
-    if (sortedField) {
+    if (categoryFilterStatus) {
       let status = "";
-      if (sortedField === "da_xoa") status = "Đã xóa";
+      if (categoryFilterStatus === "da_xoa") status = "Đã xóa";
       else status = "Tất cả";
       summaries.push(`Tình trạng: ${status}`);
     }
@@ -123,7 +132,7 @@ const Category = () => {
   // Calculate active filters count
   const getActiveFiltersCount = () => {
     let count = 0;
-    if (sortedField) count++;
+    if (categoryFilterStatus) count++;
     return count;
   };
 
@@ -134,13 +143,13 @@ const Category = () => {
         <PageTitle>{t("Quản lý danh mục sản phẩm")}</PageTitle>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => isCheck?.length > 0 && handleDeleteMany(isCheck)}
+            onClick={() => isCheck?.length > 0 && categoryFilterStatus !== "da_xoa" && handleDeleteMany(isCheck)}
             layout="outline"
             size="small"
-            className={`flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600 ${isCheck?.length < 1 ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300'}`}
+            className={`flex items-center gap-1 rounded-lg border-gray-200 dark:border-gray-600 ${(isCheck?.length < 1 || categoryFilterStatus === "da_xoa") ? 'opacity-50 cursor-not-allowed' : 'hover:border-red-300'}`}
           >
-            <FiTrash2 className={`h-4 w-4 ${isCheck?.length < 1 ? 'text-gray-400' : 'text-red-600'}`} />
-            <span className={`hidden md:inline-block ${isCheck?.length < 1 ? 'text-gray-400' : 'text-red-600'}`}>
+            <FiTrash2 className={`h-4 w-4 ${(isCheck?.length < 1 || categoryFilterStatus === "da_xoa") ? 'text-gray-400' : 'text-red-600'}`} />
+            <span className={`hidden md:inline-block ${(isCheck?.length < 1 || categoryFilterStatus === "da_xoa") ? 'text-gray-400' : 'text-red-600'}`}>
               {t("Xóa")}
             </span>
             {isCheck?.length > 0 && (
@@ -235,7 +244,7 @@ const Category = () => {
                   </label>
                   <Select
                     className="mt-1"
-                    value={sortedField}
+                    value={categoryFilterStatus}
                     onChange={handleStatusChange}
                   >
                     <option value="">Tất cả</option>
