@@ -27,22 +27,26 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate, orderStatus
 
     try {
       setLoading(true);
-      
+
       const response = await OrderServices.updateOrderStatus(orderId, selectedStatus);
-      
+
       if (response.success) {
-        notifySuccess("Cập nhật trạng thái đơn hàng thành công!");
-        
+        // Sử dụng message từ API response thay vì hardcoded text
+        notifySuccess(response.message || "Cập nhật trạng thái đơn hàng thành công!");
+
         // Gọi callback để cập nhật lại dữ liệu
         if (onStatusUpdate) {
           onStatusUpdate();
         }
       } else {
-        notifyError("Cập nhật trạng thái thất bại!");
+        // Hiển thị thông báo lỗi từ API
+        notifyError(response.message || "Cập nhật trạng thái thất bại!");
       }
     } catch (error) {
       console.error("Error updating order status:", error);
-      notifyError("Đã xảy ra lỗi khi cập nhật trạng thái");
+      // Hiển thị thông báo lỗi từ response API nếu có
+      const errorMessage = error?.response?.data?.message || "Đã xảy ra lỗi khi cập nhật trạng thái";
+      notifyError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -50,7 +54,7 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate, orderStatus
 
   // Xác định màu của option dựa trên giá trị trạng thái
   const getStatusColor = (description) => {
-    switch(description) {
+    switch (description) {
       case 'DELIVERED':
         return 'text-green-600 font-medium';
       case 'CANCELLED':
@@ -80,8 +84,8 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate, orderStatus
             {fetchingStatuses ? "Đang tải..." : "Chọn trạng thái"}
           </option>
           {orderStatuses.map((status) => (
-            <option 
-              key={status.description} 
+            <option
+              key={status.description}
               value={status.description}
               className={getStatusColor(status.description)}
             >
@@ -90,16 +94,15 @@ const OrderStatusSelect = ({ orderId, currentStatus, onStatusUpdate, orderStatus
           ))}
         </Select>
       </div>
-      
+
       <Button
         size="small"
         disabled={!hasChanged || loading || fetchingStatuses}
         onClick={handleSubmit}
-        className={`rounded-md transition-all duration-200 ${
-          hasChanged && !fetchingStatuses
-            ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
-            : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700'
-        }`}
+        className={`rounded-md transition-all duration-200 ${hasChanged && !fetchingStatuses
+          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+          : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700'
+          }`}
       >
         {loading ? (
           <BiLoaderAlt className="animate-spin h-4 w-4" />
