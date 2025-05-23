@@ -139,6 +139,37 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
                 <Badge type="danger">{t("SoldOut")}</Badge>
               )}
             </TableCell>
+
+            <TableCell>
+              <span className="text-sm">
+                {new Date(product.createdAt).toLocaleDateString('vi-VN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </TableCell>
+
+            <TableCell>
+              <span className="text-sm">
+                {new Date(product.updatedAt).toLocaleDateString('vi-VN', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </TableCell>
+
+            <TableCell>
+              <span className="text-sm">
+                {product.updatedBy || "—"}
+              </span>
+            </TableCell>
+
             <TableCell className="text-right pr-4">
               <EditDeleteButton
                 id={product.id}

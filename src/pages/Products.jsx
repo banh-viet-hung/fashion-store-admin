@@ -358,6 +358,9 @@ const Products = () => {
                     <TableCell className="font-semibold text-xs uppercase">Giá khuyến mãi</TableCell>
                     <TableCell className="font-semibold text-xs uppercase">{t("Số lượng")}</TableCell>
                     <TableCell className="font-semibold text-xs uppercase">{t("Trạng thái")}</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Ngày tạo</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Cập nhật lần cuối</TableCell>
+                    <TableCell className="font-semibold text-xs uppercase">Người cập nhật</TableCell>
                     <TableCell className="text-right font-semibold text-xs uppercase pr-4">{t("Hành động")}</TableCell>
                   </tr>
                 </TableHeader>
