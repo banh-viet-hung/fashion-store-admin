@@ -134,9 +134,9 @@ const ProductTable = ({ products, isCheck, setIsCheck }) => {
               {product.deleted || product.status === "da_xoa" ? (
                 <Badge type="neutral">Đã xóa</Badge>
               ) : product.quantity > 0 ? (
-                <Badge type="success">{t("Selling")}</Badge>
+                <Badge type="success">{t("Còn hàng")}</Badge>
               ) : (
-                <Badge type="danger">{t("SoldOut")}</Badge>
+                <Badge type="danger">{t("Hết hàng")}</Badge>
               )}
             </TableCell>
 
