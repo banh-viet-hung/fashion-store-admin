@@ -11,7 +11,7 @@ import CategoryServices from "@/services/CategoryServices";
 import ProductServices from "@/services/ProductServices";
 import ColorServices from "@/services/ColorServices";
 import SizeServices from "@/services/SizeServices";
-import UploadServices from "@/services/UploadServices";
+import ServerUploadService from "@/services/ServerUploadService";
 import { notifyError, notifySuccess } from "@/utils/toast";
 
 const useEditProductSubmit = (id) => {
@@ -302,6 +302,7 @@ const useEditProductSubmit = (id) => {
         return notifyError("Vui lòng chọn ít nhất một danh mục!");
       }
 
+      // Kiểm tra nếu giá khuyến mãi được nhập thì phải hợp lệ
       if (data.salePrice && Number(data.salePrice) > Number(data.price)) {
         setIsSubmitting(false);
         return notifyError("Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc!");
@@ -341,8 +342,9 @@ const useEditProductSubmit = (id) => {
             // Upload new images to Cloudinary if any
             if (imageUrls.length > 0) {
               const files = imageUrls.map(img => img.file);
-              const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
-              allImageUrls = [...allImageUrls, ...cloudinaryUrls];
+              notifySuccess("Đang tải ảnh lên máy chủ...");
+              const serverUrls = await ServerUploadService.uploadMultipleImages(files);
+              allImageUrls = [...allImageUrls, ...serverUrls];
             }
 
             // Update product images
@@ -469,12 +471,14 @@ const useEditProductSubmit = (id) => {
 
       let allImageUrls = [...existingImages.map(img => img.url)];
 
-      // Upload new images to Cloudinary if any
+      // Upload new images if any
       if (imageUrls.length > 0) {
         try {
+          // Upload new images
           const files = imageUrls.map(img => img.file);
-          const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
-          allImageUrls = [...allImageUrls, ...cloudinaryUrls];
+          notifySuccess("Đang tải ảnh lên máy chủ...");
+          const serverUrls = await ServerUploadService.uploadMultipleImages(files);
+          allImageUrls = [...allImageUrls, ...serverUrls];
         } catch (uploadError) {
           console.error("Error uploading images:", uploadError);
           setIsSubmitting(false);

@@ -13,7 +13,7 @@ import CategoryServices from "@/services/CategoryServices";
 import ProductServices from "@/services/ProductServices";
 import ColorServices from "@/services/ColorServices";
 import SizeServices from "@/services/SizeServices";
-import UploadServices from "@/services/UploadServices";
+import ServerUploadService from "@/services/ServerUploadService";
 import { notifyError, notifySuccess } from "@/utils/toast";
 
 const useAddProductSubmit = () => {
@@ -103,10 +103,11 @@ const useAddProductSubmit = () => {
       try {
         // 2. Upload và thêm hình ảnh cho sản phẩm
         const files = imageUrls.map(image => image.file);
-        const cloudinaryUrls = await UploadServices.uploadMultipleImages(files);
+        notifySuccess("Đang tải ảnh lên máy chủ...");
+        const localServerUrls = await ServerUploadService.uploadMultipleImages(files);
 
         await ProductServices.addProductImages(productId, {
-          imageUrls: cloudinaryUrls
+          imageUrls: localServerUrls
         });
 
         // 3. Thêm các biến thể sản phẩm
