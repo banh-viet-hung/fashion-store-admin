@@ -19,6 +19,7 @@ import AttributeServices from "@/services/AttributeServices";
 import CurrencyServices from "@/services/CurrencyServices";
 import { notifyError, notifySuccess } from "@/utils/toast";
 import useDisableForDemo from "@/hooks/useDisableForDemo";
+import FeedbackServices from "@/services/FeedbackServices";
 
 const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
   const { isModalOpen, closeModal, setIsUpdate } = useContext(SidebarContext);
@@ -218,6 +219,15 @@ const DeleteModal = ({ id, ids, setIsCheck, category, title, useParamId }) => {
           closeModal();
           setIsSubmitting(false);
         }
+      }
+
+      if (location.pathname === "/feedback") {
+        await FeedbackServices.deleteFeedback(id);
+        setIsUpdate(true);
+        notifySuccess("Đánh giá đã được xóa thành công!");
+        setServiceId();
+        closeModal();
+        setIsSubmitting(false);
       }
     } catch (err) {
       notifyError(err ? err?.response?.data?.message : err?.message);

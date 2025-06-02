@@ -43,7 +43,7 @@ const Layout = () => {
             <Suspense fallback={<ThemeSuspense />}>
               <Switch>
                 {routes.map((route, i) => {
-                  if (route.path === "/our-staff") {
+                  if (route.path === "/our-staff" || route.path === "/feedback") {
                     return (
                       <RoleBasedRoute
                         key={i}

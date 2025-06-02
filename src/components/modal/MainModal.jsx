@@ -12,6 +12,7 @@ import CategoryServices from "@/services/CategoryServices";
 import { SidebarContext } from "@/context/SidebarContext";
 import { notifySuccess, notifyError } from "@/utils/toast";
 import useToggleDrawer from "@/hooks/useToggleDrawer";
+import FeedbackServices from "@/services/FeedbackServices";
 
 const MainModal = ({ id, title }) => {
   const { isModalOpen, closeModal, setIsUpdate } = useContext(SidebarContext);
@@ -66,6 +67,17 @@ const MainModal = ({ id, title }) => {
         .then((res) => {
           setIsUpdate(true);
           notifySuccess(res.message);
+        })
+        .catch((err) => notifyError(err.message));
+      closeModal();
+      setServiceId();
+    }
+
+    if (location.pathname === "/feedback") {
+      FeedbackServices.deleteFeedback(id)
+        .then((res) => {
+          setIsUpdate(true);
+          notifySuccess("Đánh giá đã được xóa thành công!");
         })
         .catch((err) => notifyError(err.message));
       closeModal();

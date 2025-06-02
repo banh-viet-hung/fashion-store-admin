@@ -54,6 +54,10 @@ const SidebarContent = () => {
     if (adminInfo?.role === "STAFF" && route.path === "/our-staff") {
       return false;
     }
+    // Nếu người dùng không phải ADMIN, ẩn mục "Đánh giá" (feedback)
+    if (adminInfo?.role !== "ADMIN" && route.path === "/feedback") {
+      return false;
+    }
     return true;
   });
 

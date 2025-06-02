@@ -36,6 +36,7 @@ export const SidebarProvider = ({ children }) => {
   const [customerPage, setCustomerPage] = useState(1);
   const [orderPage, setOrderPage] = useState(1);
   const [staffPage, setStaffPage] = useState(1);
+  const [feedbackPage, setFeedbackPage] = useState(1);
 
   const [searchText, setSearchText] = useState(null);
   const [invoice, setInvoice] = useState(null);
@@ -128,6 +129,9 @@ export const SidebarProvider = ({ children }) => {
       case "staff":
         setStaffPage(p);
         break;
+      case "feedback":
+        setFeedbackPage(p);
+        break;
       default:
         setCurrentPage(p); // Fallback to the original state
     }
@@ -151,6 +155,8 @@ export const SidebarProvider = ({ children }) => {
         return orderPage;
       case "staff":
         return staffPage;
+      case "feedback":
+        return feedbackPage;
       default:
         return currentPage;
     }
@@ -254,6 +260,7 @@ export const SidebarProvider = ({ children }) => {
         customerPage,
         orderPage,
         staffPage,
+        feedbackPage,
         getPageByType,
         currentPageType,
         setCurrentPageType,
