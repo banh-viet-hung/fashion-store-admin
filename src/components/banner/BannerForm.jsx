@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import Error from '@/components/form/others/Error';
 import InputArea from '@/components/form/input/InputArea';
 import SwitchToggle from '@/components/form/switch/SwitchToggle';
-import Uploader from '@/components/image-uploader/Uploader';
+import BannerUploader from '@/components/image-uploader/BannerUploader';
 
 const BannerForm = ({
     register,
@@ -33,12 +33,11 @@ const BannerForm = ({
                     Hình ảnh banner <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-8 sm:col-span-4">
-                    <Uploader
+                    <BannerUploader
                         imageUrl={imageUrl}
                         setImageUrl={setImageUrl}
                         title="Hình ảnh banner"
                         onChange={() => setImageError("")}
-                        product={false}
                         setSelectedFile={setSelectedFile}
                     />
                     <p className="text-xs text-gray-500 mt-1">Chỉ được phép tải lên 1 ảnh cho mỗi banner</p>
@@ -58,8 +57,8 @@ const BannerForm = ({
                         label="Tên banner"
                         name="name"
                         type="text"
-                        placeholder="Nhập tên banner"
-                        required={true}
+                        placeholder="Tên banner"
+                        required="Tên banner là bắt buộc"
                     />
                     <Error errorName={errors.name} />
                 </div>
@@ -67,25 +66,21 @@ const BannerForm = ({
 
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <label className="block text-sm text-gray-700 dark:text-gray-400 col-span-4 sm:col-span-2 font-medium">
-                    Đường dẫn <span className="text-red-500">*</span>
+                    Liên kết (URL) <span className="text-red-500">*</span>
                 </label>
                 <div className="col-span-8 sm:col-span-4">
                     <InputArea
                         register={register}
-                        label="Đường dẫn"
+                        label="Liên kết"
                         name="link"
                         type="text"
-                        placeholder="Nhập đường dẫn khi nhấp vào banner"
-                        required={true}
+                        placeholder="Liên kết banner"
+                        required="Liên kết là bắt buộc"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Đường dẫn đến trang đích khi người dùng nhấp vào banner</p>
                     <Error errorName={errors.link} />
                 </div>
             </div>
-
-            <input
-                type="hidden"
-                {...register("type")}
-            />
 
             <div className="grid grid-cols-6 gap-3 md:gap-5 xl:gap-6 lg:gap-6 mb-6">
                 <label className="block text-sm text-gray-700 dark:text-gray-400 col-span-4 sm:col-span-2 font-medium">
@@ -93,19 +88,21 @@ const BannerForm = ({
                 </label>
                 <div className="col-span-8 sm:col-span-4">
                     <SwitchToggle
+                        title="Hiển thị banner"
                         handleProcess={setIsActive}
                         processOption={isActive}
                     />
+                    <p className="text-xs text-gray-500 mt-1">Bật để hiển thị banner trên trang web</p>
                 </div>
             </div>
 
-            <div className="flex flex-row-reverse mt-8">
+            <div className="flex flex-row-reverse pb-6">
                 <Button
-                    disabled={isSubmitting}
                     type="submit"
                     className="h-12 px-6"
+                    disabled={isSubmitting}
                 >
-                    {banner ? "Cập nhật" : "Lưu"}
+                    {isSubmitting ? "Đang lưu..." : banner?.id ? "Cập nhật" : "Lưu"}
                 </Button>
             </div>
         </form>
