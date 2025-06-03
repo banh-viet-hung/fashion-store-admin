@@ -25,6 +25,7 @@ const StoreHome = lazy(() => import("@/pages/StoreHome"));
 const StoreSetting = lazy(() => import("@/pages/StoreSetting"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Feedback = lazy(() => import("@/pages/Feedback"));
+const BannerSetting = lazy(() => import("@/pages/BannerSetting"));
 /*
 //  * ⚠ These are internal routes!
 //  * They will be rendered inside the app, using the default `containers/Layout`.
@@ -112,6 +113,10 @@ const routes = [
     component: StoreSetting,
   },
   {
+    path: "/banners",
+    component: BannerSetting,
+  },
+  {
     path: "/404",
     component: Page404,
   },
@@ -149,6 +154,7 @@ const routeAccessList = [
   { label: "ViewStore", value: "store" },
   { label: "StoreCustomization", value: "customization" },
   { label: "StoreSettings", value: "store-settings" },
+  { label: "Banners", value: "banners" },
   { label: "Product Details", value: "product" },
   { label: "Order Invoice", value: "order" },
   { label: "Edit Profile", value: "edit-profile" },

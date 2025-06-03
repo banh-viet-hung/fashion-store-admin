@@ -7,7 +7,8 @@ import {
   FiSlack,
   FiGlobe,
   FiTarget,
-  FiMessageCircle
+  FiMessageCircle,
+  FiImage
 } from "react-icons/fi";
 
 const sidebar = [
@@ -57,6 +58,12 @@ const sidebar = [
     path: "/our-staff",
     icon: FiUser,
     name: "Nhân viên",
+  },
+
+  {
+    path: "/banners",
+    icon: FiImage,
+    name: "Banner",
   },
 
   // {
